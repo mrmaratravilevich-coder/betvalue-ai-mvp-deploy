@@ -26,8 +26,6 @@ services:
         sync: false
       - key: API_SPORTS_KEY
         sync: false
-      - key: TELEGRAM_BOT_TOKEN
-        sync: false
 
 databases:
   - name: betvalue-db
