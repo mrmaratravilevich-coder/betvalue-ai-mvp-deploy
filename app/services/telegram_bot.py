@@ -46,10 +46,55 @@ async def send_message(chat_id: int, text: str) -> dict:
 async def set_commands() -> None:
     await _call(
         "setMyCommands",
-        {"commands": [{"command": "start", "description": "Запустить BetValue AI"},
-                      {"command": "matches", "description": "Проверить источники матчей"},
-                      {"command": "help", "description": "Показать справку"}]},
+        {
+            "commands": [
+                {"command": "start", "description": "Запустить BetValue AI"},
+                {"command": "matches", "description": "Проверить источники матчей"},
+                {"command": "help", "description": "Показать справку"},
+            ]
+        },
     )
+
+
+async def handle_update(update: dict) -> None:
+    """Process one Telegram update received by polling or webhook."""
+    message = update.get("message") or {}
+    raw_text = (message.get("text") or "").strip().split(maxsplit=1)[0]
+    command = raw_text.split("@", maxsplit=1)[0].lower()
+    chat = message.get("chat") or {}
+    chat_id = chat.get("id")
+    if not chat_id:
+        return
+
+    try:
+        if command == "/start":
+            await send_message(
+                chat_id,
+                "✅ BetValue AI подключён!\n\n"
+                "Команда /matches покажет состояние источников футбола и хоккея.\n"
+                "Аналитика EV появится после загрузки матчей и коэффициентов.",
+            )
+        elif command == "/help":
+            await send_message(
+                chat_id,
+                "Команды BetValue AI:\n"
+                "/start — подключить бота\n"
+                "/matches — проверить спортивные источники\n"
+                "/help — показать справку",
+            )
+        elif command == "/matches":
+            health = await check_mvp_sources()
+            football = health["football"]
+            hockey = health["hockey"]
+            await send_message(
+                chat_id,
+                "📊 Источники BetValue AI\n\n"
+                f"⚽ football-data.org: {'работает' if football['ok'] else 'ошибка'}"
+                f" ({football.get('matches', 0)} матчей PL)\n"
+                f"🏒 API-SPORTS Hockey: {'работает' if hockey['ok'] else 'ошибка'}",
+            )
+    except (httpx.HTTPError, TelegramBotError) as exc:
+        logger.warning("Telegram update error: %s", exc)
 
 
 async def poll() -> None:
@@ -61,30 +106,7 @@ async def poll() -> None:
             updates = await _call("getUpdates", {"offset": offset, "timeout": 25})
             for update in updates:
                 offset = update["update_id"] + 1
-                message = update.get("message") or {}
-                text = (message.get("text") or "").strip().split(maxsplit=1)[0]
-                chat = message.get("chat") or {}
-                if not chat.get("id"):
-                    continue
-                if text in {"/start", "/start@BetValueBot"}:
-                    await send_message(
-                        chat["id"],
-                        "BetValue AI подключён ✅\n"
-                        "Здесь будут уведомления о матчах и ставках с положительным EV.",
-                    )
-                elif text == "/help":
-                    await send_message(chat["id"], "Доступные команды: /start, /matches, /help")
-                elif text == "/matches":
-                    health = await check_mvp_sources()
-                    football = health["football"]
-                    hockey = health["hockey"]
-                    await send_message(
-                        chat["id"],
-                        "Источники матчей:\n"
-                        f"⚽ football-data.org: {'работает' if football['ok'] else 'ошибка'}"
-                        f" ({football.get('matches', 0)} матчей PL)\n"
-                        f"🏒 API-SPORTS: {'работает' if hockey['ok'] else 'ошибка'}",
-                    )
+                await handle_update(update)
         except (httpx.HTTPError, TelegramBotError) as exc:
             logger.warning("Telegram polling error: %s", exc)
             await asyncio.sleep(5)
