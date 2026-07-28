@@ -110,7 +110,7 @@ export default function Home() {
         <nav aria-label="Основная навигация">
           <a href="#matches">Матчи</a>
           <a href="#sources">Источники</a>
-          <a href="#partnership">Партнёрство</a>
+          <a href="#roadmap">Развитие</a>
         </nav>
         <a className="bot-pill" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
           <i aria-hidden="true" /> Telegram
@@ -123,8 +123,8 @@ export default function Home() {
           <h1>Расписание уже live.<br /><em>EV — следующий слой.</em></h1>
           <p>
             Единый поток футбольных и хоккейных данных. Сейчас проверяем стабильность
-            источников и матчей. Следующий релиз — партнёрский MELBET API для линии
-            и коэффициентов, затем расчёт ценности.
+            источников и матчей. Следующий релиз — подключение разрешённого источника
+            линии и коэффициентов, затем расчёт ценности.
           </p>
           <div className="hero-actions">
             <a className="primary" href="#matches">Проверить матчи</a>
@@ -267,54 +267,21 @@ export default function Home() {
             <p>Хоккейные лиги, команды и результаты в доступном окне API.</p>
             <em>ПОДКЛЮЧЕНО</em>
           </article>
-          <article className="partner-next">
+          <article className="muted">
             <b>03 · NEXT RELEASE</b>
-            <h3>MELBET API</h3>
-            <p>Партнёрская интеграция линии и коэффициентов. Доступ к API ожидается после презентации BetValue AI.</p>
-            <em>ПАРТНЁР · API ОЖИДАЕТСЯ</em>
+            <h3>Odds provider</h3>
+            <p>Разрешённый read-only источник линии для сравнения с вероятностью модели.</p>
+            <em>В РАБОТЕ</em>
           </article>
         </div>
       </section>
 
-      <section className="partnership" id="partnership">
-        <div className="partnership-intro">
-          <span>MELBET × BETVALUE AI</span>
-          <h2>От партнёрского API<br />к измеримому сигналу</h2>
-          <p>
-            BetValue AI уже собирает и нормализует спортивные события. После получения
-            доступа к MELBET API мы добавим линию и коэффициенты в тот же поток данных.
-          </p>
-        </div>
-        <ol className="partner-flow" aria-label="Сценарий интеграции MELBET API">
-          <li>
-            <b>СЕЙЧАС</b>
-            <strong>Работающий MVP</strong>
-            <p>Футбол, хоккей, русские названия матчей, публичный сайт и Telegram-бот.</p>
-          </li>
-          <li>
-            <b>ПОСЛЕ ПРЕЗЕНТАЦИИ</b>
-            <strong>Подключение MELBET API</strong>
-            <p>Получение линии и коэффициентов в согласованном read-only формате.</p>
-          </li>
-          <li>
-            <b>РЕЗУЛЬТАТ</b>
-            <strong>Модель и EV-сигналы</strong>
-            <p>Сравнение рыночных коэффициентов с вероятностями модели и доставка аналитики.</p>
-          </li>
-        </ol>
-        <div className="partner-status">
-          <span>ТЕКУЩИЙ СТАТУС</span>
-          <strong>Партнёрство подтверждено</strong>
-          <p>Доступ к API ожидается после презентации проекта. Интеграция ещё не запущена.</p>
-        </div>
-      </section>
-
       <section className="roadmap" id="roadmap">
-        <div><span>СЛЕДУЮЩИЙ РЕЛИЗ</span><h2>MELBET API → модель → EV</h2></div>
+        <div><span>СЛЕДУЮЩИЙ РЕЛИЗ</span><h2>Коэффициенты → модель → EV</h2></div>
         <ol>
           <li className="done"><b>01</b><span>Провайдеры матчей</span><em>готово</em></li>
-          <li><b>02</b><span>Интеграция MELBET API</span><em>следующий релиз</em></li>
-          <li><b>03</b><span>Вероятности модели</span><em>после API</em></li>
+          <li><b>02</b><span>Линия букмекеров</span><em>следующий релиз</em></li>
+          <li><b>03</b><span>Вероятности модели</span><em>после линии</em></li>
           <li><b>04</b><span>EV-уведомления</span><em>финальный слой</em></li>
         </ol>
       </section>
