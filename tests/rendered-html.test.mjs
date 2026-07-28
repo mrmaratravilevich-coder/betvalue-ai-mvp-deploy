@@ -24,6 +24,9 @@ test("server-renders the public BetValue AI experience", async () => {
   assert.match(html, /Загружаем матчи/);
   assert.match(html, /football-data\.org/);
   assert.match(html, /API-SPORTS/);
+  assert.match(html, /MELBET API/);
+  assert.match(html, /ПАРТНЁР · API ОЖИДАЕТСЯ/);
+  assert.match(html, /следующий релиз/i);
   assert.match(html, /https:\/\/t\.me\/BetValueAI_bot/);
   assert.doesNotMatch(html, /54%|68%|Manchester Utd|ожидаем линию/);
 });

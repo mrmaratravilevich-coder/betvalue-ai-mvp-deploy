@@ -123,7 +123,8 @@ export default function Home() {
           <h1>Расписание уже live.<br /><em>EV — следующий слой.</em></h1>
           <p>
             Единый поток футбольных и хоккейных данных. Сейчас проверяем стабильность
-            источников и матчей, затем подключаем коэффициенты и расчёт ценности.
+            источников и матчей. Следующий релиз — партнёрский MELBET API для линии
+            и коэффициентов, затем расчёт ценности.
           </p>
           <div className="hero-actions">
             <a className="primary" href="#matches">Проверить матчи</a>
@@ -266,21 +267,21 @@ export default function Home() {
             <p>Хоккейные лиги, команды и результаты в доступном окне API.</p>
             <em>ПОДКЛЮЧЕНО</em>
           </article>
-          <article className="muted">
-            <b>03 · NEXT</b>
-            <h3>Odds provider</h3>
-            <p>Разрешённый read-only источник линии для сравнения с вероятностью модели.</p>
-            <em>В РАБОТЕ</em>
+          <article className="partner-next">
+            <b>03 · NEXT RELEASE</b>
+            <h3>MELBET API</h3>
+            <p>Партнёрская интеграция линии и коэффициентов. Доступ к API ожидается после презентации BetValue AI.</p>
+            <em>ПАРТНЁР · API ОЖИДАЕТСЯ</em>
           </article>
         </div>
       </section>
 
       <section className="roadmap" id="roadmap">
-        <div><span>СЛЕДУЮЩИЙ РЕЛИЗ</span><h2>Коэффициенты → модель → EV</h2></div>
+        <div><span>СЛЕДУЮЩИЙ РЕЛИЗ</span><h2>MELBET API → модель → EV</h2></div>
         <ol>
           <li className="done"><b>01</b><span>Провайдеры матчей</span><em>готово</em></li>
-          <li><b>02</b><span>Линия букмекеров</span><em>далее</em></li>
-          <li><b>03</b><span>Вероятности модели</span><em>после линии</em></li>
+          <li><b>02</b><span>Интеграция MELBET API</span><em>следующий релиз</em></li>
+          <li><b>03</b><span>Вероятности модели</span><em>после API</em></li>
           <li><b>04</b><span>EV-уведомления</span><em>финальный слой</em></li>
         </ol>
       </section>

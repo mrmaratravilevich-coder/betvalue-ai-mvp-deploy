@@ -139,6 +139,9 @@ nav a:hover, .text-link:hover { color: var(--lime); }
 .source-grid p { color: #62665f; line-height: 1.55; }
 .source-grid em { color: #648000; font: 700 10px monospace; font-style: normal; }
 .source-grid .muted { opacity: .64; }
+.source-grid .partner-next { background: var(--ink); color: #f7f7f3; }
+.source-grid .partner-next > b, .source-grid .partner-next em { color: var(--lime); }
+.source-grid .partner-next p { color: #aeb2ad; }
 
 .roadmap { display: grid; grid-template-columns: .8fr 1.2fr; gap: 8vw; align-items: start; }
 .roadmap ol { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
