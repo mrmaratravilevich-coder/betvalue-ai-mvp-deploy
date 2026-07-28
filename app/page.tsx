@@ -24,6 +24,17 @@ type Match = {
 };
 
 type ApiState = "loading" | "ready" | "error";
+type SportFilter = "all" | "football" | "hockey";
+
+type Prediction = {
+  id: number;
+  match_id: number;
+  market: string;
+  selection: string;
+  model_probability: number;
+  model_version: string;
+  uncertainty?: number | null;
+};
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const TELEGRAM_URL = "https://t.me/BetValueAI_bot";
@@ -56,6 +67,9 @@ export default function Home() {
   const [state, setState] = useState<ApiState>("loading");
   const [sources, setSources] = useState<SourceState>({});
   const [matches, setMatches] = useState<Match[]>([]);
+  const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [sportFilter, setSportFilter] = useState<SportFilter>("all");
+  const [leagueFilter, setLeagueFilter] = useState("all");
   const [coldStart, setColdStart] = useState(false);
 
   useEffect(() => {
@@ -72,14 +86,18 @@ export default function Home() {
         if (!response.ok) throw new Error("Sources unavailable");
         return response.json();
       }),
-      fetch(`${API_URL}/matches?limit=8`, { signal: controller.signal }).then((response) => {
+      fetch(`${API_URL}/matches?limit=50`, { signal: controller.signal }).then((response) => {
         if (!response.ok) throw new Error("Matches unavailable");
         return response.json();
       }),
+      fetch(`${API_URL}/predictions?limit=200`, { signal: controller.signal })
+        .then((response) => response.ok ? response.json() : [])
+        .catch(() => []),
     ])
-      .then(([, sourceData, matchData]) => {
+      .then(([, sourceData, matchData, predictionData]) => {
         setSources(sourceData);
         setMatches(Array.isArray(matchData) ? matchData : []);
+        setPredictions(Array.isArray(predictionData) ? predictionData : []);
         setState("ready");
       })
       .catch(() => setState("error"))
@@ -100,6 +118,28 @@ export default function Home() {
     [sources],
   );
   const systemOnline = state === "ready" && onlineSources > 0;
+  const availableLeagues = useMemo(() => {
+    const filtered = sportFilter === "all"
+      ? matches
+      : matches.filter((match) => match.league.sport.code === sportFilter);
+    return [...new Map(filtered.map((match) => [match.league_id, match.league.name])).entries()];
+  }, [matches, sportFilter]);
+  const filteredMatches = useMemo(
+    () => matches.filter((match) => (
+      (sportFilter === "all" || match.league.sport.code === sportFilter)
+      && (leagueFilter === "all" || String(match.league_id) === leagueFilter)
+    )),
+    [matches, sportFilter, leagueFilter],
+  );
+  const predictionsByMatch = useMemo(() => {
+    const grouped = new Map<number, Prediction[]>();
+    predictions.forEach((prediction) => {
+      const current = grouped.get(prediction.match_id) || [];
+      current.push(prediction);
+      grouped.set(prediction.match_id, current);
+    });
+    return grouped;
+  }, [predictions]);
 
   return (
     <main>
@@ -120,11 +160,11 @@ export default function Home() {
       <section className="hero" id="top">
         <div className="hero-copy">
           <div className="eyebrow">СПОРТИВНАЯ АНАЛИТИКА · PUBLIC BETA</div>
-          <h1>Расписание уже live.<br /><em>EV — следующий слой.</em></h1>
+          <h1>Расписание уже live.<br /><em>Расчёт — в beta.</em></h1>
           <p>
-            Единый поток футбольных и хоккейных данных. Сейчас проверяем стабильность
-            источников и матчей. Следующий релиз — подключение разрешённого источника
-            линии и коэффициентов, затем расчёт ценности.
+            Единый поток футбольных и хоккейных данных с вероятностями модели Пуассона.
+            Расчёт включается только при достаточной истории команд. Следующий слой —
+            сравнение модели с разрешённым источником коэффициентов.
           </p>
           <div className="hero-actions">
             <a className="primary" href="#matches">Проверить матчи</a>
@@ -171,7 +211,7 @@ export default function Home() {
         <article>
           <small>МАТЧИ В БАЗЕ</small>
           <strong>{state === "ready" ? String(matches.length).padStart(2, "0") : "—"}</strong>
-          <span>первые 8 событий API</span>
+          <span>до 50 ближайших событий API</span>
         </article>
         <article>
           <small>РЕЖИМ</small>
@@ -227,8 +267,61 @@ export default function Home() {
         )}
 
         {state === "ready" && matches.length > 0 && (
-          <div className="match-list">
-            {matches.map((match) => (
+          <>
+            <div className="match-filters" aria-label="Фильтры матчей">
+              <div className="sport-tabs" role="group" aria-label="Вид спорта">
+                {([
+                  ["all", "Все"],
+                  ["football", "Футбол"],
+                  ["hockey", "Хоккей"],
+                ] as const).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={sportFilter === value ? "active" : ""}
+                    aria-pressed={sportFilter === value}
+                    onClick={() => {
+                      setSportFilter(value);
+                      setLeagueFilter("all");
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <label>
+                <span>Лига</span>
+                <select value={leagueFilter} onChange={(event) => setLeagueFilter(event.target.value)}>
+                  <option value="all">Все лиги</option>
+                  {availableLeagues.map(([id, name]) => (
+                    <option key={id} value={id}>{name}</option>
+                  ))}
+                </select>
+              </label>
+              <output aria-live="polite">{filteredMatches.length} матчей</output>
+            </div>
+
+            {filteredMatches.length === 0 && (
+              <div className="filter-empty">
+                <h3>В выбранном разделе матчей нет</h3>
+                <p>Сбросьте фильтры или выберите другой вид спорта и лигу.</p>
+                <button type="button" onClick={() => {
+                  setSportFilter("all");
+                  setLeagueFilter("all");
+                }}>Показать все матчи</button>
+              </div>
+            )}
+
+            <div className="match-list">
+            {filteredMatches.map((match) => {
+              const matchPredictions = predictionsByMatch.get(match.id) || [];
+              const winner = Object.fromEntries(
+                matchPredictions
+                  .filter((prediction) => ["home", "draw", "away"].includes(prediction.selection))
+                  .map((prediction) => [prediction.selection, prediction]),
+              ) as Record<string, Prediction>;
+              const hasCalculation = Boolean(winner.home && winner.draw && winner.away);
+              return (
               <article className="match-card" key={match.id}>
                 <div className="match-meta">
                   <span>{match.league.sport.code === "football" ? "Футбол" : "Хоккей"} · {match.league.name}</span>
@@ -243,9 +336,30 @@ export default function Home() {
                   <i className={match.status.toLowerCase() === "live" ? "live-dot" : ""} aria-hidden="true" />
                   {statusLabel(match.status)}
                 </div>
+                <div className={`model-analysis ${hasCalculation ? "is-ready" : ""}`}>
+                  <div>
+                    <b>{hasCalculation ? "РАСЧЁТ МОДЕЛИ · POISSON V1" : "УМНЫЙ РАСЧЁТ"}</b>
+                    <span>
+                      {hasCalculation
+                        ? `Неопределённость ${Math.round((winner.home.uncertainty ?? 0) * 100)}%`
+                        : "Нужна история завершённых матчей команд"}
+                    </span>
+                  </div>
+                  {hasCalculation ? (
+                    <dl>
+                      <div><dt>П1</dt><dd>{Math.round(winner.home.model_probability * 100)}%</dd></div>
+                      <div><dt>Х</dt><dd>{Math.round(winner.draw.model_probability * 100)}%</dd></div>
+                      <div><dt>П2</dt><dd>{Math.round(winner.away.model_probability * 100)}%</dd></div>
+                    </dl>
+                  ) : (
+                    <em>РАСЧЁТ ГОТОВИТСЯ</em>
+                  )}
+                </div>
               </article>
-            ))}
-          </div>
+              );
+            })}
+            </div>
+          </>
         )}
       </section>
 
@@ -268,21 +382,21 @@ export default function Home() {
             <em>ПОДКЛЮЧЕНО</em>
           </article>
           <article className="muted">
-            <b>03 · NEXT RELEASE</b>
-            <h3>Odds provider</h3>
-            <p>Разрешённый read-only источник линии для сравнения с вероятностью модели.</p>
-            <em>В РАБОТЕ</em>
+            <b>03 · BETA</b>
+            <h3>Poisson v1</h3>
+            <p>Вероятности исходов по истории голов команд с отдельной оценкой неопределённости.</p>
+            <em>РАСЧЁТ ПОДКЛЮЧЁН</em>
           </article>
         </div>
       </section>
 
       <section className="roadmap" id="roadmap">
-        <div><span>СЛЕДУЮЩИЙ РЕЛИЗ</span><h2>Коэффициенты → модель → EV</h2></div>
+        <div><span>ДОРОЖНАЯ КАРТА</span><h2>Модель → коэффициенты → EV</h2></div>
         <ol>
           <li className="done"><b>01</b><span>Провайдеры матчей</span><em>готово</em></li>
-          <li><b>02</b><span>Линия букмекеров</span><em>следующий релиз</em></li>
-          <li><b>03</b><span>Вероятности модели</span><em>после линии</em></li>
-          <li><b>04</b><span>EV-уведомления</span><em>финальный слой</em></li>
+          <li className="done"><b>02</b><span>Вероятности Poisson v1</span><em>beta</em></li>
+          <li><b>03</b><span>Источник коэффициентов</span><em>следующий релиз</em></li>
+          <li><b>04</b><span>EV-уведомления</span><em>после линии</em></li>
         </ol>
       </section>
 

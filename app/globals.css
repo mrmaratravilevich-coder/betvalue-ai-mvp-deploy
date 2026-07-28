@@ -118,6 +118,42 @@ nav a:hover, .text-link:hover { color: var(--lime); }
 .empty-state > a { white-space: nowrap; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.match-filters {
+  margin-bottom: 18px;
+  display: grid;
+  grid-template-columns: auto minmax(220px, 320px) 1fr;
+  gap: 14px;
+  align-items: end;
+}
+.sport-tabs { display: flex; border: 1px solid #34393b; }
+.sport-tabs button {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-right: 1px solid #34393b;
+  background: transparent;
+  color: #aeb3ae;
+  cursor: pointer;
+}
+.sport-tabs button:last-child { border-right: 0; }
+.sport-tabs button:hover { color: #fff; background: #171b1d; }
+.sport-tabs button.active { background: var(--lime); color: var(--ink); font-weight: 700; }
+.match-filters label { display: grid; gap: 7px; color: #858b85; font-size: 11px; }
+.match-filters select {
+  min-height: 44px;
+  padding: 0 38px 0 13px;
+  border: 1px solid #34393b;
+  border-radius: 0;
+  background: var(--surface);
+  color: #f7f7f3;
+  font: inherit;
+}
+.match-filters output { justify-self: end; padding-bottom: 13px; color: #858b85; font-size: 12px; }
+.filter-empty { padding: 42px; border: 1px solid var(--line); background: var(--surface); }
+.filter-empty h3 { margin: 0 0 8px; font-size: 22px; }
+.filter-empty p { margin: 0 0 20px; color: #929892; }
+.filter-empty button { padding: 11px 15px; border: 1px solid #454b4d; background: transparent; color: #fff; cursor: pointer; }
+
 .match-list { display: grid; gap: 12px; }
 .match-card { display: grid; grid-template-columns: 1fr 1.8fr .65fr; align-items: center; background: var(--surface); border: 1px solid #262a2c; padding: 22px 24px; transition: border-color .2s ease, transform .2s ease; }
 .match-card:hover { border-color: #687548; transform: translateY(-2px); }
@@ -129,6 +165,25 @@ nav a:hover, .text-link:hover { color: var(--lime); }
 .match-status { justify-self: end; color: #929892; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
 .match-status i { display: inline-block; width: 6px; height: 6px; margin-right: 7px; background: #59605a; border-radius: 50%; }
 .match-status .live-dot { background: var(--lime); box-shadow: 0 0 10px var(--lime); }
+.model-analysis {
+  grid-column: 1 / -1;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.model-analysis > div:first-child { display: grid; gap: 5px; }
+.model-analysis b { color: #8b918b; font: 700 10px monospace; letter-spacing: .06em; }
+.model-analysis span { color: #6f756f; font-size: 11px; }
+.model-analysis em { color: #777e78; font: 700 10px monospace; font-style: normal; }
+.model-analysis.is-ready b, .model-analysis.is-ready dd { color: var(--lime); }
+.model-analysis dl { display: flex; gap: 18px; margin: 0; }
+.model-analysis dl > div { display: flex; gap: 7px; align-items: baseline; }
+.model-analysis dt { color: #777e78; font-size: 10px; }
+.model-analysis dd { margin: 0; font-size: 17px; font-weight: 800; }
 
 .sources { background: var(--paper); color: var(--ink); }
 .sources-heading > p { max-width: 410px; color: #676b65; line-height: 1.55; margin: 0; }
@@ -164,6 +219,8 @@ footer p { text-align: center; }
   .metrics article:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
   .match-card { grid-template-columns: 1fr; gap: 22px; }
   .match-status { justify-self: start; }
+  .match-filters { grid-template-columns: 1fr; align-items: stretch; }
+  .match-filters output { justify-self: start; padding-bottom: 0; }
   .source-grid { grid-template-columns: 1fr; }
   .section-title, .sources-heading { align-items: start; flex-direction: column; }
   .roadmap { grid-template-columns: 1fr; }
@@ -190,6 +247,9 @@ footer p { text-align: center; }
   .empty-state > a { width: 100%; }
   .teams { grid-template-columns: 1fr; text-align: left; }
   .teams span { justify-self: start; }
+  .sport-tabs { overflow-x: auto; }
+  .sport-tabs button { flex: 1 0 auto; }
+  .model-analysis { align-items: flex-start; flex-direction: column; }
   .roadmap li { grid-template-columns: 38px 1fr; gap: 8px; }
   .roadmap li em { grid-column: 2; }
   footer { grid-template-columns: 1fr; gap: 18px; }
