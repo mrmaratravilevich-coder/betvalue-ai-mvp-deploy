@@ -6,3 +6,12 @@ __pycache__/
 .pytest_cache/
 .venv/
 frontend/
+graphify-out/
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+frontend/
