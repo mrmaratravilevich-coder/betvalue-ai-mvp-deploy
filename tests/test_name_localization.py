@@ -5,6 +5,7 @@ def test_known_football_names_are_localized() -> None:
     assert localize_name("Liverpool FC") == "Ливерпуль"
     assert localize_name("Deportivo Alavés") == "Депортиво Алавес"
     assert localize_name("Premier League") == "Премьер-лига"
+    assert localize_name("Club Friendly") == "Клубный товарищеский матч"
 
 
 def test_current_hockey_names_are_localized() -> None:

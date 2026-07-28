@@ -16,6 +16,9 @@ _KNOWN_NAMES = {
     "khl": "КХЛ",
     "nhl": "НХЛ",
     "world championship": "Чемпионат мира",
+    "club friendly": "Клубный товарищеский матч",
+    "club friendlies": "Клубные товарищеские матчи",
+    "friendly games": "Товарищеские матчи",
     "friendly international": "Международный товарищеский матч",
     # Current hockey schedule
     "lida": "Лида",
