@@ -9,6 +9,7 @@ from app.api.router import api_router
 from app.core.config import settings
 from app.db.base import Base
 from app.db.session import AsyncSessionLocal, engine
+from app.services import prediction_engine
 from app.services.match_ingestion import sync_upcoming_match_window
 
 logger = logging.getLogger(__name__)
@@ -22,6 +23,8 @@ async def automatic_match_sync() -> None:
             async with AsyncSessionLocal() as db:
                 result = await sync_upcoming_match_window(db)
                 logger.info("Automatic match sync completed: %s", result)
+                predictions = await prediction_engine.generate_predictions_all_leagues(db)
+                logger.info("Automatic prediction refresh completed: %s", predictions)
         except asyncio.CancelledError:
             raise
         except Exception:  # noqa: BLE001 - background job must not stop the API
