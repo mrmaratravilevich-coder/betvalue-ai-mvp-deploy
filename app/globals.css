@@ -91,7 +91,7 @@ nav a:hover, .text-link:hover { color: var(--lime); }
 .metrics strong { font-size: 36px; letter-spacing: -2px; }
 .metrics span { color: #8e938e; font-size: 12px; line-height: 1.4; }
 
-.match-section, .sources, .roadmap { padding: 90px 7vw; }
+.match-section, .sources, .partnership, .roadmap { padding: 90px 7vw; }
 .section-title, .sources-heading { display: flex; justify-content: space-between; align-items: end; margin-bottom: 34px; gap: 30px; }
 .section-title h2, .sources h2, .roadmap h2 { font-size: clamp(36px, 4vw, 54px); letter-spacing: -.05em; margin: 11px 0 0; }
 .text-link { color: #9ca19c; font-size: 12px; white-space: nowrap; }
@@ -143,6 +143,42 @@ nav a:hover, .text-link:hover { color: var(--lime); }
 .source-grid .partner-next > b, .source-grid .partner-next em { color: var(--lime); }
 .source-grid .partner-next p { color: #aeb2ad; }
 
+.partnership {
+  display: grid;
+  grid-template-columns: .9fr 1.35fr;
+  gap: 8vw;
+  background: var(--lime);
+  color: var(--ink);
+}
+.partnership-intro > span, .partner-flow b, .partner-status > span {
+  font: 700 10px/1.2 monospace;
+  letter-spacing: 1.6px;
+}
+.partnership h2 {
+  margin: 18px 0 24px;
+  max-width: 700px;
+  font-size: clamp(38px, 4.8vw, 68px);
+  line-height: .94;
+  letter-spacing: -.04em;
+}
+.partnership-intro > p { max-width: 590px; color: #343a28; line-height: 1.6; }
+.partner-flow { list-style: none; margin: 0; padding: 0; border-top: 1px solid rgba(11,13,15,.3); }
+.partner-flow li { padding: 24px 0; border-bottom: 1px solid rgba(11,13,15,.3); }
+.partner-flow b { display: block; margin-bottom: 9px; color: #465120; }
+.partner-flow strong { display: block; font-size: 21px; letter-spacing: -.02em; }
+.partner-flow p { margin: 8px 0 0; max-width: 570px; color: #343a28; line-height: 1.5; }
+.partner-status {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: .55fr 1fr 1.35fr;
+  gap: 28px;
+  align-items: center;
+  padding-top: 28px;
+  border-top: 2px solid var(--ink);
+}
+.partner-status strong { font-size: 18px; }
+.partner-status p { margin: 0; color: #343a28; line-height: 1.5; }
+
 .roadmap { display: grid; grid-template-columns: .8fr 1.2fr; gap: 8vw; align-items: start; }
 .roadmap ol { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
 .roadmap li { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; padding: 22px 0; border-bottom: 1px solid var(--line); color: #d9ddd8; }
@@ -169,8 +205,9 @@ footer p { text-align: center; }
   .match-status { justify-self: start; }
   .source-grid { grid-template-columns: 1fr; }
   .section-title, .sources-heading { align-items: start; flex-direction: column; }
-  .roadmap { grid-template-columns: 1fr; }
-  .sources, .match-section, .roadmap { padding: 70px 5vw; }
+  .partnership, .roadmap { grid-template-columns: 1fr; }
+  .partner-status { grid-template-columns: 1fr; }
+  .sources, .match-section, .partnership, .roadmap { padding: 70px 5vw; }
   .empty-state { align-items: flex-start; flex-direction: column; }
 }
 

@@ -110,7 +110,7 @@ export default function Home() {
         <nav aria-label="Основная навигация">
           <a href="#matches">Матчи</a>
           <a href="#sources">Источники</a>
-          <a href="#roadmap">Развитие</a>
+          <a href="#partnership">Партнёрство</a>
         </nav>
         <a className="bot-pill" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
           <i aria-hidden="true" /> Telegram
@@ -273,6 +273,39 @@ export default function Home() {
             <p>Партнёрская интеграция линии и коэффициентов. Доступ к API ожидается после презентации BetValue AI.</p>
             <em>ПАРТНЁР · API ОЖИДАЕТСЯ</em>
           </article>
+        </div>
+      </section>
+
+      <section className="partnership" id="partnership">
+        <div className="partnership-intro">
+          <span>MELBET × BETVALUE AI</span>
+          <h2>От партнёрского API<br />к измеримому сигналу</h2>
+          <p>
+            BetValue AI уже собирает и нормализует спортивные события. После получения
+            доступа к MELBET API мы добавим линию и коэффициенты в тот же поток данных.
+          </p>
+        </div>
+        <ol className="partner-flow" aria-label="Сценарий интеграции MELBET API">
+          <li>
+            <b>СЕЙЧАС</b>
+            <strong>Работающий MVP</strong>
+            <p>Футбол, хоккей, русские названия матчей, публичный сайт и Telegram-бот.</p>
+          </li>
+          <li>
+            <b>ПОСЛЕ ПРЕЗЕНТАЦИИ</b>
+            <strong>Подключение MELBET API</strong>
+            <p>Получение линии и коэффициентов в согласованном read-only формате.</p>
+          </li>
+          <li>
+            <b>РЕЗУЛЬТАТ</b>
+            <strong>Модель и EV-сигналы</strong>
+            <p>Сравнение рыночных коэффициентов с вероятностями модели и доставка аналитики.</p>
+          </li>
+        </ol>
+        <div className="partner-status">
+          <span>ТЕКУЩИЙ СТАТУС</span>
+          <strong>Партнёрство подтверждено</strong>
+          <p>Доступ к API ожидается после презентации проекта. Интеграция ещё не запущена.</p>
         </div>
       </section>
 

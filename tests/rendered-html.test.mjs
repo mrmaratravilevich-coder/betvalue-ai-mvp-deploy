@@ -25,6 +25,9 @@ test("server-renders the public BetValue AI experience", async () => {
   assert.match(html, /football-data\.org/);
   assert.match(html, /API-SPORTS/);
   assert.match(html, /MELBET API/);
+  assert.match(html, /MELBET × BETVALUE AI/);
+  assert.match(html, /Партнёрство подтверждено/);
+  assert.match(html, /Интеграция ещё не запущена/);
   assert.match(html, /ПАРТНЁР · API ОЖИДАЕТСЯ/);
   assert.match(html, /следующий релиз/i);
   assert.match(html, /https:\/\/t\.me\/BetValueAI_bot/);
