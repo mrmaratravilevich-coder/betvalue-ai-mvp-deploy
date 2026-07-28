@@ -9,7 +9,7 @@
 см. app/worker (следующий этап) — здесь только сама логика синка.
 """
 import logging
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,7 +18,7 @@ from app.core.leagues import SUPPORTED_LEAGUES, LeagueConfig
 from app.models.enums import MatchStatus
 from app.models.match import Match, MatchTeamStat
 from app.models.team import League, Sport, Team
-from app.services.sources import api_hockey, football_data, statsbomb
+from app.services.sources import api_hockey, football_data
 
 logger = logging.getLogger(__name__)
 
@@ -320,6 +320,7 @@ async def sync_statsbomb_league(db: AsyncSession, league_config: LeagueConfig) -
     """
     if league_config.statsbomb_competition_id is None or league_config.statsbomb_season_id is None:
         return 0
+    from app.services.sources import statsbomb
 
     sport = await get_or_create_sport(db, code="football", name="Футбол")
     league = await get_or_create_league(
@@ -372,6 +373,8 @@ async def sync_statsbomb_league(db: AsyncSession, league_config: LeagueConfig) -
 
 async def _sync_statsbomb_team_stats(db: AsyncSession, match: Match, home_team: Team, away_team: Team) -> None:
     """Агрегирует события матча (shots, xG) по командам в MatchTeamStat."""
+    from app.services.sources import statsbomb
+
     try:
         events = await statsbomb.fetch_team_match_stats(int(match.external_id))
     except statsbomb.StatsBombError as exc:
@@ -432,3 +435,56 @@ async def run_daily_match_update(db: AsyncSession) -> dict[str, int]:
         "api_hockey_matches": hockey_count,
         "statsbomb_matches": sb_count,
     }
+
+
+async def sync_upcoming_match_window(
+    db: AsyncSession,
+    *,
+    today: date | None = None,
+    football_days: int = 30,
+    hockey_days: int = 3,
+) -> dict[str, int]:
+    """
+    Lightweight production sync for the public API.
+
+    Unlike the full daily pipeline, this only loads the near-term schedule and
+    deliberately skips the large StatsBomb historical dataset. Provider or
+    competition failures are isolated so one unavailable source cannot leave
+    the other sport empty.
+    """
+    current_day = today or date.today()
+    result = {
+        "football_data_matches": 0,
+        "api_hockey_matches": 0,
+        "errors": 0,
+    }
+
+    for league_config in SUPPORTED_LEAGUES:
+        if not league_config.football_data_code:
+            continue
+        try:
+            result["football_data_matches"] += await sync_football_data_league(
+                db,
+                league_config,
+                date_from=current_day,
+                date_to=current_day + timedelta(days=football_days),
+            )
+        except Exception:  # noqa: BLE001 - isolate provider/competition failures
+            await db.rollback()
+            result["errors"] += 1
+            logger.exception(
+                "Upcoming sync: football-data.org %s failed",
+                league_config.football_data_code,
+            )
+
+    for offset in range(hockey_days + 1):
+        game_date = current_day + timedelta(days=offset)
+        try:
+            result["api_hockey_matches"] += await sync_api_hockey_date(db, game_date)
+        except Exception:  # noqa: BLE001 - continue with the remaining dates
+            await db.rollback()
+            result["errors"] += 1
+            logger.exception("Upcoming sync: API-SPORTS Hockey %s failed", game_date)
+
+    logger.info("Upcoming match window sync finished: %s", result)
+    return result

@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
@@ -18,6 +18,7 @@ async def list_matches(
     league_id: int | None = Query(default=None),
     day: date | None = Query(default=None, description="Фильтр по дате матча"),
     status: MatchStatus | None = Query(default=None),
+    upcoming_only: bool = Query(default=True, description="Только текущие и будущие матчи"),
     limit: int = Query(default=50, le=200),
     offset: int = Query(default=0, ge=0),
     db: AsyncSession = Depends(get_db),
@@ -27,6 +28,8 @@ async def list_matches(
         stmt = stmt.where(Match.league_id == league_id)
     if status is not None:
         stmt = stmt.where(Match.status == status)
+    if upcoming_only:
+        stmt = stmt.where(Match.kickoff_at >= datetime.now(timezone.utc))
     if day is not None:
         stmt = stmt.where(func.date(Match.kickoff_at) == day)
 

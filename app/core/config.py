@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     # База данных
     DATABASE_URL: str = "postgresql+asyncpg://betvalue:betvalue@localhost:5432/betvalue"
     AUTO_CREATE_SCHEMA: bool = False
+    AUTO_SYNC_MATCHES: bool = True
+    MATCH_SYNC_INTERVAL_SECONDS: int = 60 * 60 * 6
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
