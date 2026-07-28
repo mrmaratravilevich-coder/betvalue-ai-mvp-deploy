@@ -39,10 +39,17 @@ async def get_me() -> dict:
     return await _call("getMe")
 
 
-async def send_message(chat_id: int, text: str) -> dict:
+async def send_message(chat_id: int, text: str, reply_markup: dict | None = None) -> dict:
+    payload = {
+        "chat_id": chat_id,
+        "text": text,
+        "disable_web_page_preview": True,
+    }
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
     return await _call(
         "sendMessage",
-        {"chat_id": chat_id, "text": text, "disable_web_page_preview": True},
+        payload,
     )
 
 
@@ -53,6 +60,7 @@ async def set_commands() -> None:
             "commands": [
                 {"command": "start", "description": "Запустить BetValue AI"},
                 {"command": "matches", "description": "Показать ближайшие матчи"},
+                {"command": "channel", "description": "Открыть канал аналитики"},
                 {"command": "help", "description": "Показать справку"},
             ]
         },
@@ -91,6 +99,23 @@ def _format_matches(matches: UpcomingMatches) -> str:
     return "\n".join(lines)
 
 
+def _channel_url() -> str | None:
+    value = (settings.TELEGRAM_CHANNEL_URL or "").strip()
+    if not value:
+        return None
+    if value.startswith("@"):
+        return f"https://t.me/{value[1:]}"
+    return value
+
+
+def _channel_keyboard(url: str) -> dict:
+    return {
+        "inline_keyboard": [
+            [{"text": "Открыть канал аналитики", "url": url}],
+        ]
+    }
+
+
 async def handle_update(update: dict) -> None:
     """Process one Telegram update received by polling or webhook."""
     message = update.get("message") or {}
@@ -103,11 +128,17 @@ async def handle_update(update: dict) -> None:
 
     try:
         if command == "/start":
+            channel_hint = (
+                "\nКанал с техническими разборами: /channel"
+                if _channel_url()
+                else ""
+            )
             await send_message(
                 chat_id,
                 "✅ BetValue AI подключён!\n\n"
                 "Команда /matches покажет ближайшие матчи по футболу и хоккею.\n"
-                "Аналитика EV появится после загрузки матчей и коэффициентов.",
+                "Модель показывает вероятности только при достаточной истории команд."
+                f"{channel_hint}",
             )
         elif command == "/help":
             await send_message(
@@ -115,8 +146,22 @@ async def handle_update(update: dict) -> None:
                 "Команды BetValue AI:\n"
                 "/start — подключить бота\n"
                 "/matches — показать ближайшие матчи\n"
+                "/channel — открыть канал аналитики\n"
                 "/help — показать справку",
             )
+        elif command == "/channel":
+            channel_url = _channel_url()
+            if channel_url:
+                await send_message(
+                    chat_id,
+                    "Технические разборы матчей, обновления модели и открытая статистика — в канале BetValue AI.",
+                    reply_markup=_channel_keyboard(channel_url),
+                )
+            else:
+                await send_message(
+                    chat_id,
+                    "Канал BetValue AI готовится к запуску. Пока используйте /matches для просмотра ближайших событий.",
+                )
         elif command == "/matches":
             matches = await get_upcoming_matches()
             await send_message(chat_id, _format_matches(matches))

@@ -10,7 +10,7 @@ from app.services.upcoming_matches import UpcomingFixture, UpcomingMatches
 async def test_start_command_sends_welcome(monkeypatch):
     sent = []
 
-    async def fake_send(chat_id: int, text: str) -> dict:
+    async def fake_send(chat_id: int, text: str, reply_markup=None) -> dict:
         sent.append((chat_id, text))
         return {}
 
@@ -28,7 +28,7 @@ async def test_start_command_sends_welcome(monkeypatch):
 async def test_matches_command_lists_upcoming_fixtures(monkeypatch):
     sent = []
 
-    async def fake_send(chat_id: int, text: str) -> dict:
+    async def fake_send(chat_id: int, text: str, reply_markup=None) -> dict:
         sent.append((chat_id, text))
         return {}
 
@@ -75,7 +75,7 @@ async def test_matches_command_lists_upcoming_fixtures(monkeypatch):
 async def test_matches_command_handles_empty_schedule(monkeypatch):
     sent = []
 
-    async def fake_send(chat_id: int, text: str) -> dict:
+    async def fake_send(chat_id: int, text: str, reply_markup=None) -> dict:
         sent.append((chat_id, text))
         return {}
 
@@ -91,3 +91,41 @@ async def test_matches_command_handles_empty_schedule(monkeypatch):
 
     assert "Матчей в ближайшие 30 дней не найдено" in sent[0][1]
     assert "Матчей на ближайшие 4 дня не найдено" in sent[0][1]
+
+
+@pytest.mark.asyncio
+async def test_channel_command_opens_configured_channel(monkeypatch):
+    sent = []
+
+    async def fake_send(chat_id: int, text: str, reply_markup=None) -> dict:
+        sent.append((chat_id, text, reply_markup))
+        return {}
+
+    monkeypatch.setattr(telegram_bot, "send_message", fake_send)
+    monkeypatch.setattr(telegram_bot.settings, "TELEGRAM_CHANNEL_URL", "@BetValueAI_Analytics")
+
+    await telegram_bot.handle_update(
+        {"message": {"text": "/channel", "chat": {"id": 42}}}
+    )
+
+    assert "Технические разборы" in sent[0][1]
+    assert sent[0][2]["inline_keyboard"][0][0]["url"] == "https://t.me/BetValueAI_Analytics"
+
+
+@pytest.mark.asyncio
+async def test_channel_command_handles_missing_channel(monkeypatch):
+    sent = []
+
+    async def fake_send(chat_id: int, text: str, reply_markup=None) -> dict:
+        sent.append((chat_id, text, reply_markup))
+        return {}
+
+    monkeypatch.setattr(telegram_bot, "send_message", fake_send)
+    monkeypatch.setattr(telegram_bot.settings, "TELEGRAM_CHANNEL_URL", None)
+
+    await telegram_bot.handle_update(
+        {"message": {"text": "/channel", "chat": {"id": 42}}}
+    )
+
+    assert "готовится к запуску" in sent[0][1]
+    assert sent[0][2] is None
