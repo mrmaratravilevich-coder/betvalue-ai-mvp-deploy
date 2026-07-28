@@ -76,6 +76,7 @@ class Settings(BaseSettings):
 
     # Telegram
     TELEGRAM_BOT_TOKEN: str | None = None
+    TELEGRAM_WEBHOOK_SECRET: str | None = None
 
     # Rate limiting
     RATE_LIMIT_PER_MINUTE: int = 60
