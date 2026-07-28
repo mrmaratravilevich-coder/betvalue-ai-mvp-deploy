@@ -2,6 +2,143 @@
 
 import asyncio
 import logging
+from datetime import timedelta, timezone
+
+import httpx
+
+from app.core.config import settings
+from app.services.upcoming_matches import UpcomingFixture, UpcomingMatches, get_upcoming_matches
+
+logger = logging.getLogger(__name__)
+MOSCOW_TZ = timezone(timedelta(hours=3), name="MSK")
+
+
+class TelegramBotError(RuntimeError):
+    pass
+
+
+def _token() -> str:
+    if not settings.TELEGRAM_BOT_TOKEN:
+        raise TelegramBotError("TELEGRAM_BOT_TOKEN is not configured")
+    return settings.TELEGRAM_BOT_TOKEN
+
+
+async def _call(method: str, payload: dict | None = None) -> dict:
+    url = f"https://api.telegram.org/bot{_token()}/{method}"
+    async with httpx.AsyncClient(timeout=35) as client:
+        response = await client.post(url, json=payload or {})
+    data = response.json()
+    if not response.is_success or not data.get("ok"):
+        description = data.get("description", f"HTTP {response.status_code}")
+        raise TelegramBotError(f"Telegram API error: {description}")
+    return data["result"]
+
+
+async def get_me() -> dict:
+    return await _call("getMe")
+
+
+async def send_message(chat_id: int, text: str) -> dict:
+    return await _call(
+        "sendMessage",
+        {"chat_id": chat_id, "text": text, "disable_web_page_preview": True},
+    )
+
+
+async def set_commands() -> None:
+    await _call(
+        "setMyCommands",
+        {
+            "commands": [
+                {"command": "start", "description": "Запустить BetValue AI"},
+                {"command": "matches", "description": "Показать ближайшие матчи"},
+                {"command": "help", "description": "Показать справку"},
+            ]
+        },
+    )
+
+
+def _format_fixture(fixture: UpcomingFixture) -> str:
+    kickoff = fixture.kickoff_at.astimezone(MOSCOW_TZ)
+    return (
+        f"{kickoff:%d.%m %H:%M} — {fixture.home_team} × {fixture.away_team}\n"
+        f"   {fixture.competition}"
+    )
+
+
+def _format_matches(matches: UpcomingMatches) -> str:
+    lines = ["📅 Ближайшие матчи · время МСК"]
+
+    lines.extend(["", "⚽ Футбол · football-data.org"])
+    if matches.football:
+        lines.extend(_format_fixture(fixture) for fixture in matches.football)
+    elif "football" in matches.errors:
+        lines.append("Источник временно недоступен.")
+    else:
+        lines.append("Матчей в ближайшие 30 дней не найдено.")
+
+    lines.extend(["", "🏒 Хоккей · API-SPORTS"])
+    if matches.hockey:
+        lines.extend(_format_fixture(fixture) for fixture in matches.hockey)
+    elif "hockey" in matches.errors:
+        lines.append("Источник временно недоступен.")
+    else:
+        lines.append("Матчей на ближайшие 4 дня не найдено.")
+
+    lines.extend(["", "Данные обновляются не чаще одного раза в 5 минут."])
+    return "\n".join(lines)
+
+
+async def handle_update(update: dict) -> None:
+    """Process one Telegram update received by polling or webhook."""
+    message = update.get("message") or {}
+    raw_text = (message.get("text") or "").strip().split(maxsplit=1)[0]
+    command = raw_text.split("@", maxsplit=1)[0].lower()
+    chat = message.get("chat") or {}
+    chat_id = chat.get("id")
+    if not chat_id:
+        return
+
+    try:
+        if command == "/start":
+            await send_message(
+                chat_id,
+                "✅ BetValue AI подключён!\n\n"
+                "Команда /matches покажет ближайшие матчи по футболу и хоккею.\n"
+                "Аналитика EV появится после загрузки матчей и коэффициентов.",
+            )
+        elif command == "/help":
+            await send_message(
+                chat_id,
+                "Команды BetValue AI:\n"
+                "/start — подключить бота\n"
+                "/matches — показать ближайшие матчи\n"
+                "/help — показать справку",
+            )
+        elif command == "/matches":
+            matches = await get_upcoming_matches()
+            await send_message(chat_id, _format_matches(matches))
+    except (httpx.HTTPError, TelegramBotError) as exc:
+        logger.warning("Telegram update error: %s", exc)
+
+
+async def poll() -> None:
+    await set_commands()
+    offset = 0
+    logger.info("Telegram polling started")
+    while True:
+        try:
+            updates = await _call("getUpdates", {"offset": offset, "timeout": 25})
+            for update in updates:
+                offset = update["update_id"] + 1
+                await handle_update(update)
+        except (httpx.HTTPError, TelegramBotError) as exc:
+            logger.warning("Telegram polling error: %s", exc)
+            await asyncio.sleep(5)
+"""Minimal async Telegram Bot API client and long-polling command handler."""
+
+import asyncio
+import logging
 
 import httpx
 
