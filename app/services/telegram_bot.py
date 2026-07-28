@@ -2,13 +2,15 @@
 
 import asyncio
 import logging
+from datetime import timedelta, timezone
 
 import httpx
 
 from app.core.config import settings
-from app.services.source_health import check_mvp_sources
+from app.services.upcoming_matches import UpcomingFixture, UpcomingMatches, get_upcoming_matches
 
 logger = logging.getLogger(__name__)
+MOSCOW_TZ = timezone(timedelta(hours=3), name="MSK")
 
 
 class TelegramBotError(RuntimeError):
@@ -49,11 +51,42 @@ async def set_commands() -> None:
         {
             "commands": [
                 {"command": "start", "description": "Запустить BetValue AI"},
-                {"command": "matches", "description": "Проверить источники матчей"},
+                {"command": "matches", "description": "Показать ближайшие матчи"},
                 {"command": "help", "description": "Показать справку"},
             ]
         },
     )
+
+
+def _format_fixture(fixture: UpcomingFixture) -> str:
+    kickoff = fixture.kickoff_at.astimezone(MOSCOW_TZ)
+    return (
+        f"{kickoff:%d.%m %H:%M} — {fixture.home_team} × {fixture.away_team}\n"
+        f"   {fixture.competition}"
+    )
+
+
+def _format_matches(matches: UpcomingMatches) -> str:
+    lines = ["📅 Ближайшие матчи · время МСК"]
+
+    lines.extend(["", "⚽ Футбол · football-data.org"])
+    if matches.football:
+        lines.extend(_format_fixture(fixture) for fixture in matches.football)
+    elif "football" in matches.errors:
+        lines.append("Источник временно недоступен.")
+    else:
+        lines.append("Матчей в ближайшие 30 дней не найдено.")
+
+    lines.extend(["", "🏒 Хоккей · API-SPORTS"])
+    if matches.hockey:
+        lines.extend(_format_fixture(fixture) for fixture in matches.hockey)
+    elif "hockey" in matches.errors:
+        lines.append("Источник временно недоступен.")
+    else:
+        lines.append("Матчей на ближайшие 4 дня не найдено.")
+
+    lines.extend(["", "Данные обновляются не чаще одного раза в 5 минут."])
+    return "\n".join(lines)
 
 
 async def handle_update(update: dict) -> None:
@@ -71,7 +104,7 @@ async def handle_update(update: dict) -> None:
             await send_message(
                 chat_id,
                 "✅ BetValue AI подключён!\n\n"
-                "Команда /matches покажет состояние источников футбола и хоккея.\n"
+                "Команда /matches покажет ближайшие матчи по футболу и хоккею.\n"
                 "Аналитика EV появится после загрузки матчей и коэффициентов.",
             )
         elif command == "/help":
@@ -79,20 +112,12 @@ async def handle_update(update: dict) -> None:
                 chat_id,
                 "Команды BetValue AI:\n"
                 "/start — подключить бота\n"
-                "/matches — проверить спортивные источники\n"
+                "/matches — показать ближайшие матчи\n"
                 "/help — показать справку",
             )
         elif command == "/matches":
-            health = await check_mvp_sources()
-            football = health["football"]
-            hockey = health["hockey"]
-            await send_message(
-                chat_id,
-                "📊 Источники BetValue AI\n\n"
-                f"⚽ football-data.org: {'работает' if football['ok'] else 'ошибка'}"
-                f" ({football.get('matches', 0)} матчей PL)\n"
-                f"🏒 API-SPORTS Hockey: {'работает' if hockey['ok'] else 'ошибка'}",
-            )
+            matches = await get_upcoming_matches()
+            await send_message(chat_id, _format_matches(matches))
     except (httpx.HTTPError, TelegramBotError) as exc:
         logger.warning("Telegram update error: %s", exc)
 
