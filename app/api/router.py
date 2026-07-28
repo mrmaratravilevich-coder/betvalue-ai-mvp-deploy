@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.routes import auth, bank, ev, history, matches, predictions, settings, sources, stats
+from app.api.routes import auth, bank, ev, history, matches, predictions, settings, sources, stats, telegram
 
 api_router = APIRouter()
 api_router.include_router(auth.router)
@@ -12,3 +12,4 @@ api_router.include_router(bank.router)
 api_router.include_router(settings.router)
 api_router.include_router(stats.router)
 api_router.include_router(sources.router)
+api_router.include_router(telegram.router)
