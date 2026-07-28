@@ -31,13 +31,11 @@ test("server-renders the public BetValue AI experience", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>BetValue AI — спортивная аналитика<\/title>/i);
-  assert.match(html, /Расписание уже live/);
-  assert.match(html, /Poisson v1/);
+  assert.match(html, /Матчи — в одном месте/);
   assert.match(html, /Загружаем матчи/);
-  assert.match(html, /football-data\.org/);
-  assert.match(html, /API-SPORTS/);
-  assert.match(html, /следующий релиз/i);
+  assert.match(html, /Вероятность показывает расклад/);
   assert.match(html, /https:\/\/t\.me\/BetValueAI_bot/);
+  assert.doesNotMatch(html, /football-data\.org|API-SPORTS|Документация API|PUBLIC API|АРХИТЕКТУРА MVP/i);
   assert.doesNotMatch(html, /54%|68%|Manchester Utd|ожидаем линию/i);
 });
 

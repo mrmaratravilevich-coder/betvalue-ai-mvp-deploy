@@ -149,8 +149,7 @@ export default function Home() {
         </a>
         <nav aria-label="Основная навигация">
           <a href="#matches">Матчи</a>
-          <a href="#sources">Источники</a>
-          <a href="#roadmap">Развитие</a>
+          <a href="#about">Как считаем</a>
         </nav>
         <a className="bot-pill" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
           <i aria-hidden="true" /> Telegram
@@ -159,12 +158,11 @@ export default function Home() {
 
       <section className="hero" id="top">
         <div className="hero-copy">
-          <div className="eyebrow">СПОРТИВНАЯ АНАЛИТИКА · PUBLIC BETA</div>
-          <h1>Расписание уже live.<br /><em>Расчёт — в beta.</em></h1>
+          <div className="eyebrow">ФУТБОЛ И ХОККЕЙ · ОТКРЫТАЯ BETA</div>
+          <h1>Матчи — в одном месте.<br /><em>Расчёт — без догадок.</em></h1>
           <p>
-            Единый поток футбольных и хоккейных данных с вероятностями модели Пуассона.
-            Расчёт включается только при достаточной истории команд. Следующий слой —
-            сравнение модели с разрешённым источником коэффициентов.
+            Ближайшие матчи, вероятности исходов и понятная оценка надёжности.
+            Если истории команд недостаточно, мы честно не публикуем проценты.
           </p>
           <div className="hero-actions">
             <a className="primary" href="#matches">Проверить матчи</a>
@@ -184,24 +182,24 @@ export default function Home() {
           <p>
             {state === "loading"
               ? coldStart ? "Пробуждаем API после паузы…" : "Проверяем источники…"
-              : state === "error" ? "API временно не ответил" : "источника данных доступны"}
+              : state === "error" ? "Данные временно недоступны" : "вида спорта доступны"}
           </p>
           <div className="source-mini">
-            <span>football-data.org</span>
-            <strong>{state === "loading" ? "…" : sources.football?.ok ? "ONLINE" : "ERROR"}</strong>
+            <span>Футбольные матчи</span>
+            <strong>{state === "loading" ? "…" : sources.football?.ok ? "ГОТОВО" : "ПАУЗА"}</strong>
           </div>
           <div className="source-mini">
-            <span>API-SPORTS Hockey</span>
-            <strong>{state === "loading" ? "…" : sources.hockey?.ok ? "ONLINE" : "ERROR"}</strong>
+            <span>Хоккейные матчи</span>
+            <strong>{state === "loading" ? "…" : sources.hockey?.ok ? "ГОТОВО" : "ПАУЗА"}</strong>
           </div>
         </aside>
       </section>
 
       <section className="metrics" aria-label="Статус проекта">
         <article>
-          <small>ИСТОЧНИКИ</small>
+          <small>ДАННЫЕ МАТЧЕЙ</small>
           <strong>{state === "loading" ? "—" : `${onlineSources}/2`}</strong>
-          <span>проверяются в реальном времени</span>
+          <span>футбол и хоккей доступны</span>
         </article>
         <article>
           <small>ВИДЫ СПОРТА</small>
@@ -211,7 +209,7 @@ export default function Home() {
         <article>
           <small>МАТЧИ В БАЗЕ</small>
           <strong>{state === "ready" ? String(matches.length).padStart(2, "0") : "—"}</strong>
-          <span>до 50 ближайших событий API</span>
+          <span>до 50 ближайших событий</span>
         </article>
         <article>
           <small>РЕЖИМ</small>
@@ -223,12 +221,9 @@ export default function Home() {
       <section className="match-section" id="matches">
         <div className="section-title">
           <div>
-            <span>ДАННЫЕ ИЗ PUBLIC API</span>
-            <h2>Матчи в потоке</h2>
+            <span>БЛИЖАЙШИЕ СОБЫТИЯ</span>
+            <h2>Матчи и расчёты</h2>
           </div>
-          <a className="text-link" href={`${API_URL}/docs`} target="_blank" rel="noreferrer">
-            Документация API <span aria-hidden="true">↗</span>
-          </a>
         </div>
 
         {state === "loading" && (
@@ -236,7 +231,7 @@ export default function Home() {
             <div className="loader" aria-hidden="true" />
             <div>
               <h3>{coldStart ? "Запускаем сервер" : "Загружаем матчи"}</h3>
-              <p>{coldStart ? "Бесплатный сервер Render может просыпаться до 50 секунд." : "Получаем свежий срез из API."}</p>
+              <p>{coldStart ? "Бесплатный сервер Render может просыпаться до 50 секунд." : "Получаем актуальное расписание и расчёты."}</p>
             </div>
           </div>
         )}
@@ -245,7 +240,7 @@ export default function Home() {
           <div className="state-panel error-panel" role="alert">
             <span className="state-code">503</span>
             <div>
-              <h3>API пока не ответил</h3>
+              <h3>Матчи пока не загрузились</h3>
               <p>Обновите страницу через минуту или проверьте текущие матчи в Telegram.</p>
             </div>
             <button type="button" onClick={() => window.location.reload()}>Повторить</button>
@@ -259,8 +254,8 @@ export default function Home() {
               <h3>Веб-база ждёт первую синхронизацию</h3>
             </div>
             <p>
-              Подключения к football-data.org и API-SPORTS уже работают. Пока расписание
-              не записано в веб-базу, бот получает ближайшие события напрямую у провайдеров.
+              Расписание обновляется. Пока матчи не появились на сайте,
+              проверьте ближайшие события в Telegram.
             </p>
             <a className="primary" href={TELEGRAM_URL} target="_blank" rel="noreferrer">Матчи в Telegram</a>
           </div>
@@ -366,41 +361,19 @@ export default function Home() {
         )}
       </section>
 
-      <section className="sources" id="sources">
-        <div className="sources-heading">
-          <div><span>АРХИТЕКТУРА MVP</span><h2>От расписания к сигналу</h2></div>
-          <p>Каждый следующий слой включаем только после проверки предыдущего.</p>
+      <section className="plain-explainer" id="about">
+        <div>
+          <span>КАК ЧИТАТЬ РАСЧЁТ</span>
+          <h2>Вероятность показывает расклад, а не обещает результат</h2>
         </div>
-        <div className="source-grid">
-          <article>
-            <b>01 · LIVE</b>
-            <h3>football-data.org</h3>
-            <p>Расписание, результаты и команды ведущих европейских футбольных лиг.</p>
-            <em>ПОДКЛЮЧЕНО</em>
-          </article>
-          <article>
-            <b>02 · LIVE</b>
-            <h3>API-SPORTS</h3>
-            <p>Хоккейные лиги, команды и результаты в доступном окне API.</p>
-            <em>ПОДКЛЮЧЕНО</em>
-          </article>
-          <article className="muted">
-            <b>03 · BETA</b>
-            <h3>Poisson v1</h3>
-            <p>Вероятности исходов по истории голов команд с отдельной оценкой неопределённости.</p>
-            <em>РАСЧЁТ ПОДКЛЮЧЁН</em>
-          </article>
-        </div>
-      </section>
-
-      <section className="roadmap" id="roadmap">
-        <div><span>ДОРОЖНАЯ КАРТА</span><h2>Модель → коэффициенты → EV</h2></div>
-        <ol>
-          <li className="done"><b>01</b><span>Провайдеры матчей</span><em>готово</em></li>
-          <li className="done"><b>02</b><span>Вероятности Poisson v1</span><em>beta</em></li>
-          <li><b>03</b><span>Источник коэффициентов</span><em>следующий релиз</em></li>
-          <li><b>04</b><span>EV-уведомления</span><em>после линии</em></li>
-        </ol>
+        <p>
+          Расчёт опирается на завершённые матчи и результативность команд.
+          Рядом с процентами мы показываем неопределённость. Если данных мало,
+          расчёт остаётся в подготовке.
+        </p>
+        <a className="primary" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
+          Следить в Telegram <span aria-hidden="true">↗</span>
+        </a>
       </section>
 
       <footer>

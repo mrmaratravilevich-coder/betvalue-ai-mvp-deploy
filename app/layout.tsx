@@ -10,16 +10,16 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: "BetValue AI — спортивная аналитика",
-    description: "Актуальные матчи по футболу и хоккею. Открытая beta BetValue AI.",
+    description: "Ближайшие матчи по футболу и хоккею, вероятности исходов и понятная оценка надёжности.",
     openGraph: {
       title: "BetValue AI — спортивная аналитика",
-      description: "Расписание уже live. EV — следующий слой.",
+      description: "Матчи, вероятности исходов и честная оценка неопределённости.",
       images: [{ url: imageUrl, width: 1536, height: 1024, alt: "BetValue AI" }],
     },
     twitter: {
       card: "summary_large_image",
       title: "BetValue AI — спортивная аналитика",
-      description: "Расписание уже live. EV — следующий слой.",
+      description: "Матчи, вероятности исходов и честная оценка неопределённости.",
       images: [imageUrl],
     },
   };
