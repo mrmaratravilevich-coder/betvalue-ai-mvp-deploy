@@ -10,6 +10,11 @@ type SourceState = {
 type Match = {
   id: number;
   league_id: number;
+  league: {
+    name: string;
+    original_name?: string;
+    sport: { code: string; name: string };
+  };
   home_team: { name: string };
   away_team: { name: string };
   kickoff_at: string;
@@ -225,7 +230,7 @@ export default function Home() {
             {matches.map((match) => (
               <article className="match-card" key={match.id}>
                 <div className="match-meta">
-                  <span>Лига #{match.league_id}</span>
+                  <span>{match.league.sport.code === "football" ? "Футбол" : "Хоккей"} · {match.league.name}</span>
                   <time dateTime={match.kickoff_at}>{formatKickoff(match.kickoff_at)} МСК</time>
                 </div>
                 <div className="teams">
