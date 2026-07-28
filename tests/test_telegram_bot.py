@@ -65,8 +65,9 @@ async def test_matches_command_lists_upcoming_fixtures(monkeypatch):
         {"message": {"text": "/matches@BetValueAI_bot", "chat": {"id": 42}}}
     )
 
-    assert "Liverpool × Arsenal" in sent[0][1]
+    assert "Ливерпуль × Арсенал" in sent[0][1]
     assert "Динамо × Спартак" in sent[0][1]
+    assert "Премьер-лига" in sent[0][1]
     assert "время МСК" in sent[0][1]
 
 

@@ -8,6 +8,7 @@ from sqlalchemy.orm import selectinload
 from app.db.session import get_db
 from app.models.enums import MatchStatus
 from app.models.match import Match
+from app.models.team import League
 from app.schemas.match import MatchOut
 
 router = APIRouter(prefix="/matches", tags=["matches"])
@@ -23,7 +24,11 @@ async def list_matches(
     offset: int = Query(default=0, ge=0),
     db: AsyncSession = Depends(get_db),
 ):
-    stmt = select(Match).options(selectinload(Match.home_team), selectinload(Match.away_team))
+    stmt = select(Match).options(
+        selectinload(Match.home_team),
+        selectinload(Match.away_team),
+        selectinload(Match.league).selectinload(League.sport),
+    )
     if league_id is not None:
         stmt = stmt.where(Match.league_id == league_id)
     if status is not None:

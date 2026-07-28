@@ -7,6 +7,7 @@ from datetime import timedelta, timezone
 import httpx
 
 from app.core.config import settings
+from app.services.name_localization import localize_name
 from app.services.upcoming_matches import UpcomingFixture, UpcomingMatches, get_upcoming_matches
 
 logger = logging.getLogger(__name__)
@@ -61,8 +62,9 @@ async def set_commands() -> None:
 def _format_fixture(fixture: UpcomingFixture) -> str:
     kickoff = fixture.kickoff_at.astimezone(MOSCOW_TZ)
     return (
-        f"{kickoff:%d.%m %H:%M} — {fixture.home_team} × {fixture.away_team}\n"
-        f"   {fixture.competition}"
+        f"{kickoff:%d.%m %H:%M} — {localize_name(fixture.home_team)} × "
+        f"{localize_name(fixture.away_team)}\n"
+        f"   {localize_name(fixture.competition)}"
     )
 
 
