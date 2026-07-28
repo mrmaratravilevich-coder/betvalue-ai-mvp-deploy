@@ -355,6 +355,9 @@ export default function Home() {
                     <em>РАСЧЁТ ГОТОВИТСЯ</em>
                   )}
                 </div>
+                <a className="match-detail-link" href={`/matches/${match.id}`}>
+                  Открыть разбор матча <span aria-hidden="true">→</span>
+                </a>
               </article>
               );
             })}
