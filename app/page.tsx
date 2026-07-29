@@ -315,7 +315,14 @@ export default function Home() {
                   .filter((prediction) => ["home", "draw", "away"].includes(prediction.selection))
                   .map((prediction) => [prediction.selection, prediction]),
               ) as Record<string, Prediction>;
-              const hasCalculation = Boolean(winner.home && winner.draw && winner.away);
+              const outcomeUncertainty = winner.home?.uncertainty;
+              const hasCalculation = Boolean(
+                winner.home
+                && winner.draw
+                && winner.away
+                && outcomeUncertainty != null
+                && outcomeUncertainty <= 0.5
+              );
               return (
               <article className="match-card" key={match.id}>
                 <div className="match-meta">
@@ -336,7 +343,7 @@ export default function Home() {
                     <b>{hasCalculation ? "РАСЧЁТ МОДЕЛИ · POISSON V1" : "УМНЫЙ РАСЧЁТ"}</b>
                     <span>
                       {hasCalculation
-                        ? `Неопределённость ${Math.round((winner.home.uncertainty ?? 0) * 100)}%`
+                        ? `Неопределённость ${Math.round(outcomeUncertainty * 100)}%`
                         : "Нужна история завершённых матчей команд"}
                     </span>
                   </div>

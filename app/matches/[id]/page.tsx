@@ -74,8 +74,14 @@ export default function MatchPage() {
     () => Object.fromEntries(predictions.map((item) => [item.selection, item])) as Record<string, Prediction>,
     [predictions],
   );
-  const calculated = Boolean(outcomes.home && outcomes.draw && outcomes.away);
   const uncertainty = outcomes.home?.uncertainty;
+  const calculated = Boolean(
+    outcomes.home
+    && outcomes.draw
+    && outcomes.away
+    && uncertainty != null
+    && uncertainty <= 0.5
+  );
   const confidence = uncertainty == null
     ? "Не оценена"
     : uncertainty <= 0.2 ? "Высокая" : uncertainty <= 0.35 ? "Средняя" : "Ограниченная";
