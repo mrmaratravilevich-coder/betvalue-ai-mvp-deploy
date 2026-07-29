@@ -13,6 +13,12 @@ router = APIRouter(prefix="/predictions", tags=["predictions"])
 @router.get("", response_model=list[PredictionOut])
 async def list_predictions(
     match_id: int | None = Query(default=None),
+    max_uncertainty: float = Query(
+        default=0.5,
+        ge=0,
+        le=1,
+        description="Максимальная допустимая неопределённость модели",
+    ),
     limit: int = Query(default=50, le=200),
     offset: int = Query(default=0, ge=0),
     db: AsyncSession = Depends(get_db),
@@ -20,6 +26,10 @@ async def list_predictions(
     stmt = select(Prediction).options(selectinload(Prediction.market))
     if match_id is not None:
         stmt = stmt.where(Prediction.match_id == match_id)
+    stmt = stmt.where(
+        Prediction.uncertainty.is_not(None),
+        Prediction.uncertainty <= max_uncertainty,
+    )
     stmt = stmt.order_by(Prediction.created_at.desc()).offset(offset).limit(limit)
 
     result = await db.execute(stmt)
