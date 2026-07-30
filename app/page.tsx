@@ -26,6 +26,7 @@ type Match = {
 
 type ApiState = "loading" | "ready" | "error";
 type SportFilter = "all" | "football" | "hockey" | "basketball";
+type DateFilter = "all" | "today" | "tomorrow";
 
 type Prediction = {
   id: number;
@@ -69,6 +70,38 @@ function statusLabel(status: string) {
   return labels[status.toLowerCase()] || status;
 }
 
+function moscowDateKey(value: string | Date) {
+  const date = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: "Europe/Moscow",
+  }).format(date);
+}
+
+function countLabel(count: number) {
+  const lastTwo = count % 100;
+  const last = count % 10;
+  const word = lastTwo >= 11 && lastTwo <= 14
+    ? "матчей"
+    : last === 1 ? "матч" : last >= 2 && last <= 4 ? "матча" : "матчей";
+  return `${count} ${word}`;
+}
+
+function hasReliableCalculation(matchPredictions: Prediction[]) {
+  const selections = new Map(matchPredictions.map((item) => [item.selection, item]));
+  const uncertainty = selections.get("home")?.uncertainty;
+  return Boolean(
+    selections.get("home")
+    && selections.get("draw")
+    && selections.get("away")
+    && uncertainty != null
+    && uncertainty <= 0.5
+  );
+}
+
 export default function Home() {
   const [state, setState] = useState<ApiState>("loading");
   const [sources, setSources] = useState<SourceState>({});
@@ -76,6 +109,8 @@ export default function Home() {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [sportFilter, setSportFilter] = useState<SportFilter>("all");
   const [leagueFilter, setLeagueFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+  const [analyticsOnly, setAnalyticsOnly] = useState(false);
   const [coldStart, setColdStart] = useState(false);
 
   useEffect(() => {
@@ -92,7 +127,7 @@ export default function Home() {
         if (!response.ok) throw new Error("Sources unavailable");
         return response.json();
       }),
-      fetch(`${API_URL}/matches?limit=50`, { signal: controller.signal }).then((response) => {
+      fetch(`${API_URL}/matches?limit=200`, { signal: controller.signal }).then((response) => {
         if (!response.ok) throw new Error("Matches unavailable");
         return response.json();
       }),
@@ -132,13 +167,6 @@ export default function Home() {
       : matches.filter((match) => match.league.sport.code === sportFilter);
     return [...new Map(filtered.map((match) => [match.league_id, match.league.name])).entries()];
   }, [matches, sportFilter]);
-  const filteredMatches = useMemo(
-    () => matches.filter((match) => (
-      (sportFilter === "all" || match.league.sport.code === sportFilter)
-      && (leagueFilter === "all" || String(match.league_id) === leagueFilter)
-    )),
-    [matches, sportFilter, leagueFilter],
-  );
   const predictionsByMatch = useMemo(() => {
     const grouped = new Map<number, Prediction[]>();
     predictions.forEach((prediction) => {
@@ -148,6 +176,25 @@ export default function Home() {
     });
     return grouped;
   }, [predictions]);
+  const filteredMatches = useMemo(() => {
+    const todayKey = moscowDateKey(new Date());
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowKey = moscowDateKey(tomorrow);
+
+    return matches.filter((match) => {
+      const matchDate = moscowDateKey(match.kickoff_at);
+      const dateMatches = dateFilter === "all"
+        || (dateFilter === "today" && matchDate === todayKey)
+        || (dateFilter === "tomorrow" && matchDate === tomorrowKey);
+      return (
+        (sportFilter === "all" || match.league.sport.code === sportFilter)
+        && (leagueFilter === "all" || String(match.league_id) === leagueFilter)
+        && dateMatches
+        && (!analyticsOnly || hasReliableCalculation(predictionsByMatch.get(match.id) || []))
+      );
+    });
+  }, [matches, sportFilter, leagueFilter, dateFilter, analyticsOnly, predictionsByMatch]);
 
   return (
     <main>
@@ -221,7 +268,7 @@ export default function Home() {
         <article>
           <small>МАТЧИ В БАЗЕ</small>
           <strong>{state === "ready" ? String(matches.length).padStart(2, "0") : "—"}</strong>
-          <span>до 50 ближайших событий</span>
+          <span>до 200 ближайших событий</span>
         </article>
         <article>
           <small>РЕЖИМ</small>
@@ -306,16 +353,47 @@ export default function Home() {
                   ))}
                 </select>
               </label>
-              <output aria-live="polite">{filteredMatches.length} матчей</output>
+              <output aria-live="polite">{countLabel(filteredMatches.length)}</output>
+              <div className="quick-filters" role="group" aria-label="Период и готовность аналитики">
+                {([
+                  ["all", "Все даты"],
+                  ["today", "Сегодня"],
+                  ["tomorrow", "Завтра"],
+                ] as const).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={dateFilter === value ? "active" : ""}
+                    aria-pressed={dateFilter === value}
+                    onClick={() => setDateFilter(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={analyticsOnly ? "active" : ""}
+                  aria-pressed={analyticsOnly}
+                  onClick={() => setAnalyticsOnly((current) => !current)}
+                >
+                  Аналитика готова
+                </button>
+              </div>
             </div>
 
             {filteredMatches.length === 0 && (
               <div className="filter-empty">
                 <h3>В выбранном разделе матчей нет</h3>
-                <p>Сбросьте фильтры или выберите другой вид спорта и лигу.</p>
+                <p>
+                  {analyticsOnly
+                    ? "Для выбранных матчей пока нет расчётов с достаточной уверенностью."
+                    : "Измените дату, вид спорта или лигу."}
+                </p>
                 <button type="button" onClick={() => {
                   setSportFilter("all");
                   setLeagueFilter("all");
+                  setDateFilter("all");
+                  setAnalyticsOnly(false);
                 }}>Показать все матчи</button>
               </div>
             )}

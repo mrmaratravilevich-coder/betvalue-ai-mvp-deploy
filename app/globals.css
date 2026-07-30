@@ -125,6 +125,27 @@ nav a:hover, .text-link:hover { color: var(--lime); }
   gap: 14px;
   align-items: end;
 }
+.quick-filters {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 4px;
+}
+.quick-filters button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid #34393b;
+  background: transparent;
+  color: #aeb3ae;
+  cursor: pointer;
+}
+.quick-filters button:hover { color: #fff; border-color: #59605d; }
+.quick-filters button.active {
+  border-color: var(--lime);
+  background: rgba(200, 255, 50, .08);
+  color: var(--lime);
+}
 .sport-tabs { display: flex; border: 1px solid #34393b; }
 .sport-tabs button {
   min-height: 44px;

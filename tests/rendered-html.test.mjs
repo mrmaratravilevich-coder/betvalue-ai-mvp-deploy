@@ -33,9 +33,11 @@ test("server-renders the public BetValue AI experience", async () => {
   assert.match(html, /<title>BetValue AI — спортивная аналитика<\/title>/i);
   assert.match(html, /Матчи — в одном месте/);
   assert.match(html, /Загружаем матчи/);
-  assert.match(html, /Вероятность показывает расклад/);
+  assert.match(html, /Аналитика — по делу/);
+  assert.match(html, /ФУТБОЛ · ХОККЕЙ · БАСКЕТБОЛ/);
   assert.match(html, /https:\/\/t\.me\/BetValueAI_bot/);
   assert.doesNotMatch(html, /football-data\.org|API-SPORTS|Документация API|PUBLIC API|АРХИТЕКТУРА MVP/i);
+  assert.doesNotMatch(html, /Poisson|Как считаем/i);
   assert.doesNotMatch(html, /54%|68%|Manchester Utd|ожидаем линию/i);
 });
 
@@ -44,5 +46,5 @@ test("server-renders a dedicated match analysis route", async () => {
   assert.equal(response.status, 200);
   const html = await response.text();
   assert.match(html, /Загружаем разбор матча/);
-  assert.match(html, /Сверяем расписание и последнюю версию модели/);
+  assert.match(html, /Сверяем расписание и актуальность данных/);
 });
