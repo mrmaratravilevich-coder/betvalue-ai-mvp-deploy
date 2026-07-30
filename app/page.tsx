@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 type SourceState = {
   football?: { ok: boolean; matches?: number };
   hockey?: { ok: boolean };
+  basketball?: { ok: boolean };
 };
 
 type Match = {
@@ -24,7 +25,7 @@ type Match = {
 };
 
 type ApiState = "loading" | "ready" | "error";
-type SportFilter = "all" | "football" | "hockey";
+type SportFilter = "all" | "football" | "hockey" | "basketball";
 
 type Prediction = {
   id: number;
@@ -38,6 +39,11 @@ type Prediction = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const TELEGRAM_URL = "https://t.me/BetValueAI_bot";
+const SPORT_LABELS: Record<string, string> = {
+  football: "Футбол",
+  hockey: "Хоккей",
+  basketball: "Баскетбол",
+};
 
 function formatKickoff(value: string) {
   const date = new Date(value);
@@ -114,7 +120,9 @@ export default function Home() {
   }, []);
 
   const onlineSources = useMemo(
-    () => Number(Boolean(sources.football?.ok)) + Number(Boolean(sources.hockey?.ok)),
+    () => Number(Boolean(sources.football?.ok))
+      + Number(Boolean(sources.hockey?.ok))
+      + Number(Boolean(sources.basketball?.ok)),
     [sources],
   );
   const systemOnline = state === "ready" && onlineSources > 0;
@@ -149,7 +157,7 @@ export default function Home() {
         </a>
         <nav aria-label="Основная навигация">
           <a href="#matches">Матчи</a>
-          <a href="#about">Как считаем</a>
+          <a href="#about">Об аналитике</a>
         </nav>
         <a className="bot-pill" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
           <i aria-hidden="true" /> Telegram
@@ -158,11 +166,11 @@ export default function Home() {
 
       <section className="hero" id="top">
         <div className="hero-copy">
-          <div className="eyebrow">ФУТБОЛ И ХОККЕЙ · ОТКРЫТАЯ BETA</div>
-          <h1>Матчи — в одном месте.<br /><em>Расчёт — без догадок.</em></h1>
+          <div className="eyebrow">ФУТБОЛ · ХОККЕЙ · БАСКЕТБОЛ · ОТКРЫТАЯ BETA</div>
+          <h1>Матчи — в одном месте.<br /><em>Аналитика — по делу.</em></h1>
           <p>
-            Ближайшие матчи, вероятности исходов и понятная оценка надёжности.
-            Если истории команд недостаточно, мы честно не публикуем проценты.
+            Независимый умный сервис для быстрого разбора матчей: вероятности исходов,
+            уровень уверенности и только те расчёты, которым хватает данных.
           </p>
           <div className="hero-actions">
             <a className="primary" href="#matches">Проверить матчи</a>
@@ -178,7 +186,7 @@ export default function Home() {
             <span>Состояние системы</span>
             <b>{state === "loading" ? "CHECK" : systemOnline ? "LIVE" : "OFFLINE"}</b>
           </div>
-          <div className="score">{state === "loading" ? "—" : onlineSources}<span>/2</span></div>
+          <div className="score">{state === "loading" ? "—" : onlineSources}<span>/3</span></div>
           <p>
             {state === "loading"
               ? coldStart ? "Пробуждаем API после паузы…" : "Проверяем источники…"
@@ -192,19 +200,23 @@ export default function Home() {
             <span>Хоккейные матчи</span>
             <strong>{state === "loading" ? "…" : sources.hockey?.ok ? "ГОТОВО" : "ПАУЗА"}</strong>
           </div>
+          <div className="source-mini">
+            <span>Баскетбольные матчи</span>
+            <strong>{state === "loading" ? "…" : sources.basketball?.ok ? "ГОТОВО" : "ПАУЗА"}</strong>
+          </div>
         </aside>
       </section>
 
       <section className="metrics" aria-label="Статус проекта">
         <article>
           <small>ДАННЫЕ МАТЧЕЙ</small>
-          <strong>{state === "loading" ? "—" : `${onlineSources}/2`}</strong>
-          <span>футбол и хоккей доступны</span>
+          <strong>{state === "loading" ? "—" : `${onlineSources}/3`}</strong>
+          <span>статус спортивных разделов</span>
         </article>
         <article>
           <small>ВИДЫ СПОРТА</small>
-          <strong>02</strong>
-          <span>футбол · хоккей</span>
+          <strong>03</strong>
+          <span>футбол · хоккей · баскетбол</span>
         </article>
         <article>
           <small>МАТЧИ В БАЗЕ</small>
@@ -269,6 +281,7 @@ export default function Home() {
                   ["all", "Все"],
                   ["football", "Футбол"],
                   ["hockey", "Хоккей"],
+                  ["basketball", "Баскетбол"],
                 ] as const).map(([value, label]) => (
                   <button
                     key={value}
@@ -326,7 +339,7 @@ export default function Home() {
               return (
               <article className="match-card" key={match.id}>
                 <div className="match-meta">
-                  <span>{match.league.sport.code === "football" ? "Футбол" : "Хоккей"} · {match.league.name}</span>
+                  <span>{SPORT_LABELS[match.league.sport.code] || match.league.sport.name} · {match.league.name}</span>
                   <time dateTime={match.kickoff_at}>{formatKickoff(match.kickoff_at)} МСК</time>
                 </div>
                 <div className="teams">
@@ -340,11 +353,11 @@ export default function Home() {
                 </div>
                 <div className={`model-analysis ${hasCalculation ? "is-ready" : ""}`}>
                   <div>
-                    <b>{hasCalculation ? "РАСЧЁТ МОДЕЛИ · POISSON V1" : "УМНЫЙ РАСЧЁТ"}</b>
+                    <b>{hasCalculation ? "АНАЛИТИКА ГОТОВА" : "АНАЛИТИКА ГОТОВИТСЯ"}</b>
                     <span>
                       {hasCalculation
-                        ? `Неопределённость ${Math.round(outcomeUncertainty * 100)}%`
-                        : "Нужна история завершённых матчей команд"}
+                        ? "Данных достаточно для публикации"
+                        : "Пока недостаточно данных о командах"}
                     </span>
                   </div>
                   {hasCalculation ? (
@@ -370,13 +383,13 @@ export default function Home() {
 
       <section className="plain-explainer" id="about">
         <div>
-          <span>КАК ЧИТАТЬ РАСЧЁТ</span>
-          <h2>Вероятность показывает расклад, а не обещает результат</h2>
+          <span>НЕЗАВИСИМАЯ АНАЛИТИКА</span>
+          <h2>Умный расчёт помогает оценить матч, но решение остаётся за вами</h2>
         </div>
         <p>
-          Расчёт опирается на завершённые матчи и результативность команд.
-          Рядом с процентами мы показываем неопределённость. Если данных мало,
-          расчёт остаётся в подготовке.
+          Сервис обрабатывает спортивные данные, проверяет качество результата
+          и не публикует проценты при низкой уверенности. Без образа «гуру»,
+          громких обещаний и навязчивых рекомендаций.
         </p>
         <a className="primary" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
           Следить в Telegram <span aria-hidden="true">↗</span>

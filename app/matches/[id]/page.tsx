@@ -23,12 +23,16 @@ type Prediction = {
   match_id: number;
   selection: string;
   model_probability: number;
-  model_version: string;
   uncertainty?: number | null;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const TELEGRAM_URL = "https://t.me/BetValueAI_bot";
+const SPORT_LABELS: Record<string, string> = {
+  football: "ФУТБОЛ",
+  hockey: "ХОККЕЙ",
+  basketball: "БАСКЕТБОЛ",
+};
 
 function formatKickoff(value: string) {
   return new Intl.DateTimeFormat("ru-RU", {
@@ -87,7 +91,7 @@ export default function MatchPage() {
     : uncertainty <= 0.2 ? "Высокая" : uncertainty <= 0.35 ? "Средняя" : "Ограниченная";
 
   if (state === "loading") {
-    return <main className="detail-shell"><div className="detail-state" role="status"><div className="loader" /><h1>Загружаем разбор матча</h1><p>Сверяем расписание и последнюю версию модели.</p></div></main>;
+    return <main className="detail-shell"><div className="detail-state" role="status"><div className="loader" /><h1>Загружаем разбор матча</h1><p>Сверяем расписание и актуальность данных.</p></div></main>;
   }
 
   if (state === "error" || state === "missing" || !match) {
@@ -113,7 +117,7 @@ export default function MatchPage() {
 
       <section className="match-sheet">
         <div className="match-context">
-          <span>{match.league.sport.code === "football" ? "ФУТБОЛ" : "ХОККЕЙ"} · {match.league.name}</span>
+          <span>{SPORT_LABELS[match.league.sport.code] || match.league.sport.name.toUpperCase()} · {match.league.name}</span>
           <time dateTime={match.kickoff_at}>{formatKickoff(match.kickoff_at)} МСК</time>
         </div>
 
@@ -139,9 +143,9 @@ export default function MatchPage() {
           </div>
         ) : (
           <div className="calculation-pending">
-            <span>МОДЕЛЬ · ОЖИДАНИЕ ДАННЫХ</span>
+            <span>АНАЛИТИКА · ОЖИДАНИЕ ДАННЫХ</span>
             <h2>Проценты пока не публикуем</h2>
-            <p>Для честного расчёта модели нужна достаточная история завершённых матчей команд в этой лиге.</p>
+            <p>Для уверенного расчёта нужна достаточная история завершённых матчей команд в этой лиге.</p>
           </div>
         )}
 
@@ -150,13 +154,12 @@ export default function MatchPage() {
             <span className="detail-kicker">КАК ЧИТАТЬ РАСЧЁТ</span>
             <h2>{calculated ? "Вероятность — не обещание результата" : "Почему расчёт ещё не появился"}</h2>
             <p>{calculated
-              ? "Модель сравнивает результативность команд на завершённых матчах лиги и распределяет вероятность между тремя исходами. Случайные события, составы и травмы пока не входят в Poisson v1."
-              : "Мы не подставляем усреднённые или вымышленные значения. Расчёт появится автоматически после накопления достаточного объёма истории."}</p>
+              ? "Проценты показывают текущую оценку расклада перед матчем. Они помогают сравнить исходы, но не гарантируют результат."
+              : "Мы не подставляем усреднённые или вымышленные значения. Аналитика появится автоматически, когда данных станет достаточно."}</p>
           </section>
           <aside className="model-facts">
-            <div><span>Версия</span><strong>{outcomes.home?.model_version || "Poisson v1"}</strong></div>
             <div><span>Надёжность</span><strong>{calculated ? confidence : "Недостаточно данных"}</strong></div>
-            <div><span>Неопределённость</span><strong>{uncertainty == null ? "—" : `${Math.round(uncertainty * 100)}%`}</strong></div>
+            <div><span>Статус данных</span><strong>{calculated ? "Достаточно для публикации" : "Идёт накопление"}</strong></div>
             <div><span>Обновление</span><strong>При синхронизации матчей</strong></div>
           </aside>
         </div>
