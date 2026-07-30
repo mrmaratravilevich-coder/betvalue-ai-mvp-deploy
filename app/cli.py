@@ -53,6 +53,8 @@ def main() -> None:
         asyncio.run(_run(match_ingestion.sync_all_football_data_leagues))
     elif command == "sync-hockey":
         asyncio.run(_run(match_ingestion.sync_api_hockey_date))
+    elif command == "sync-basketball":
+        asyncio.run(_run(match_ingestion.sync_api_basketball_date))
     elif command == "sync-statsbomb":
         asyncio.run(_run(match_ingestion.sync_all_statsbomb_leagues))
     elif command == "sync-all":

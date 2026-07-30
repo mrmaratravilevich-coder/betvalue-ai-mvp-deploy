@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.enums import MarketCode, MatchStatus
 from app.models.match import Match
 from app.models.prediction import Prediction
-from app.models.team import League
+from app.models.team import League, Sport
 from app.services.markets import get_or_create_market
 from app.services.models.poisson_model import predict_match
 
@@ -236,7 +236,15 @@ async def generate_predictions_all_leagues(db: AsyncSession) -> dict[str, int]:
     в терминах ТЗ — здесь это "обучение" силы команд + расчёт вероятностей).
     """
     result: dict[str, int] = {}
-    leagues = (await db.execute(select(League))).scalars().all()
+    # Баскетбол требует отдельной модели для двух исходов и счёта в очках.
+    # Расписание показываем сразу, а футбольный расчёт для него не запускаем.
+    leagues = (
+        await db.execute(
+            select(League)
+            .join(Sport)
+            .where(Sport.code.in_(("football", "hockey")))
+        )
+    ).scalars().all()
     for league in leagues:
         count = await generate_predictions_for_league(db, league.id)
         if count:

@@ -2,13 +2,14 @@
 
 import asyncio
 
-from app.services.sources import api_hockey, football_data
+from app.services.sources import api_basketball, api_hockey, football_data
 
 
 async def check_mvp_sources() -> dict:
-    football_result, hockey_result = await asyncio.gather(
+    football_result, hockey_result, basketball_result = await asyncio.gather(
         football_data.fetch_competition_matches("PL"),
         api_hockey.fetch_status(),
+        api_basketball.fetch_status(),
         return_exceptions=True,
     )
 
@@ -22,5 +23,9 @@ async def check_mvp_sources() -> dict:
         if isinstance(hockey_result, Exception)
         else {"ok": True, "provider": "API-SPORTS"}
     )
-    return {"football": football, "hockey": hockey}
-
+    basketball = (
+        {"ok": False, "error": type(basketball_result).__name__}
+        if isinstance(basketball_result, Exception)
+        else {"ok": True, "provider": "API-SPORTS"}
+    )
+    return {"football": football, "hockey": hockey, "basketball": basketball}

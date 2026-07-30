@@ -18,7 +18,7 @@ from app.core.leagues import SUPPORTED_LEAGUES, LeagueConfig
 from app.models.enums import MatchStatus
 from app.models.match import Match, MatchTeamStat
 from app.models.team import League, Sport, Team
-from app.services.sources import api_hockey, football_data
+from app.services.sources import api_basketball, api_hockey, football_data
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +47,22 @@ API_HOCKEY_STATUS_MAP = {
     "FT": MatchStatus.FINISHED,
     "AOT": MatchStatus.FINISHED,
     "AP": MatchStatus.FINISHED,
+}
+
+API_BASKETBALL_STATUS_MAP = {
+    "NS": MatchStatus.SCHEDULED,
+    "PST": MatchStatus.POSTPONED,
+    "CANC": MatchStatus.CANCELLED,
+    "ABD": MatchStatus.CANCELLED,
+    "Q1": MatchStatus.LIVE,
+    "Q2": MatchStatus.LIVE,
+    "Q3": MatchStatus.LIVE,
+    "Q4": MatchStatus.LIVE,
+    "OT": MatchStatus.LIVE,
+    "BT": MatchStatus.LIVE,
+    "HT": MatchStatus.LIVE,
+    "FT": MatchStatus.FINISHED,
+    "AOT": MatchStatus.FINISHED,
 }
 
 
@@ -307,6 +323,89 @@ async def sync_api_hockey_date(db: AsyncSession, game_date: date | None = None) 
 
 
 # ---------------------------------------------------------------------------
+# API-SPORTS Basketball: current schedule and results
+# ---------------------------------------------------------------------------
+
+SOURCE_API_BASKETBALL = "api_sports_basketball"
+
+
+def normalize_basketball_game(raw: dict) -> dict:
+    league = raw.get("league") or {}
+    country = raw.get("country") or {}
+    teams = raw.get("teams") or {}
+    home = teams.get("home") or {}
+    away = teams.get("away") or {}
+    status_raw = raw.get("status") or {}
+    scores = raw.get("scores") or {}
+    home_scores = scores.get("home") or {}
+    away_scores = scores.get("away") or {}
+    timestamp = raw.get("timestamp")
+    kickoff = (
+        datetime.fromtimestamp(int(timestamp), tz=timezone.utc)
+        if timestamp is not None
+        else datetime.fromisoformat(str(raw["date"]).replace("Z", "+00:00")).astimezone(timezone.utc)
+    )
+    short_status = status_raw.get("short") if isinstance(status_raw, dict) else str(status_raw)
+    country_name = country.get("name") if isinstance(country, dict) else str(country)
+    return {
+        "external_id": str(raw["id"]),
+        "kickoff_at": kickoff,
+        "status": API_BASKETBALL_STATUS_MAP.get(short_status, MatchStatus.SCHEDULED),
+        "league_id": league["id"],
+        "league_name": league["name"],
+        "country": country_name,
+        "season": str(league.get("season")) if league.get("season") is not None else None,
+        "round": str(raw.get("week") or raw.get("stage")) if raw.get("week") or raw.get("stage") else None,
+        "home_id": home["id"],
+        "home_name": home["name"],
+        "away_id": away["id"],
+        "away_name": away["name"],
+        "home_score": home_scores.get("total"),
+        "away_score": away_scores.get("total"),
+    }
+
+
+async def sync_api_basketball_date(db: AsyncSession, game_date: date | None = None) -> int:
+    game_date = game_date or date.today()
+    games = await api_basketball.fetch_games(game_date)
+    if not games:
+        logger.info("API-SPORTS Basketball: %s — матчей нет", game_date)
+        return 0
+
+    sport = await get_or_create_sport(db, code="basketball", name="Баскетбол")
+    processed = 0
+    for raw in games:
+        try:
+            game = normalize_basketball_game(raw)
+        except (KeyError, TypeError, ValueError) as exc:
+            logger.warning("API-SPORTS Basketball: пропущена некорректная запись: %s", exc)
+            continue
+        league = await get_or_create_league(
+            db, sport, game["league_name"], game["country"], SOURCE_API_BASKETBALL, game["league_id"]
+        )
+        home = await get_or_create_team(db, league, game["home_name"], SOURCE_API_BASKETBALL, game["home_id"])
+        away = await get_or_create_team(db, league, game["away_name"], SOURCE_API_BASKETBALL, game["away_id"])
+        await upsert_match(
+            db,
+            league,
+            home,
+            away,
+            kickoff_at=game["kickoff_at"],
+            status=game["status"],
+            season=game["season"],
+            round_=game["round"],
+            home_score=game["home_score"],
+            away_score=game["away_score"],
+            source=SOURCE_API_BASKETBALL,
+            external_id=game["external_id"],
+        )
+        processed += 1
+    await db.commit()
+    logger.info("API-SPORTS Basketball: %s — обработано %s матчей", game_date, processed)
+    return processed
+
+
+# ---------------------------------------------------------------------------
 # StatsBomb Open Data: детальная статистика (xG, удары, владение...)
 # ---------------------------------------------------------------------------
 
@@ -429,10 +528,12 @@ async def sync_all_statsbomb_leagues(db: AsyncSession) -> int:
 async def run_daily_match_update(db: AsyncSession) -> dict[str, int]:
     fd_count = await sync_all_football_data_leagues(db)
     hockey_count = await sync_api_hockey_date(db)
+    basketball_count = await sync_api_basketball_date(db)
     sb_count = await sync_all_statsbomb_leagues(db)
     return {
         "football_data_matches": fd_count,
         "api_hockey_matches": hockey_count,
+        "api_basketball_matches": basketball_count,
         "statsbomb_matches": sb_count,
     }
 
@@ -443,6 +544,7 @@ async def sync_upcoming_match_window(
     today: date | None = None,
     football_days: int = 30,
     hockey_days: int = 3,
+    basketball_days: int = 3,
 ) -> dict[str, int]:
     """
     Lightweight production sync for the public API.
@@ -456,6 +558,7 @@ async def sync_upcoming_match_window(
     result = {
         "football_data_matches": 0,
         "api_hockey_matches": 0,
+        "api_basketball_matches": 0,
         "errors": 0,
     }
 
@@ -485,6 +588,15 @@ async def sync_upcoming_match_window(
             await db.rollback()
             result["errors"] += 1
             logger.exception("Upcoming sync: API-SPORTS Hockey %s failed", game_date)
+
+    for offset in range(basketball_days + 1):
+        game_date = current_day + timedelta(days=offset)
+        try:
+            result["api_basketball_matches"] += await sync_api_basketball_date(db, game_date)
+        except Exception:  # noqa: BLE001 - continue with the remaining dates
+            await db.rollback()
+            result["errors"] += 1
+            logger.exception("Upcoming sync: API-SPORTS Basketball %s failed", game_date)
 
     logger.info("Upcoming match window sync finished: %s", result)
     return result

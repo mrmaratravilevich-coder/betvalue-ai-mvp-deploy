@@ -19,6 +19,7 @@ async def test_upcoming_sync_uses_bounded_windows_and_isolates_failures(monkeypa
     db = FakeSession()
     football_calls = []
     hockey_calls = []
+    basketball_calls = []
 
     async def fake_football(session, league, date_from=None, date_to=None):
         football_calls.append((league.football_data_code, date_from, date_to))
@@ -30,14 +31,20 @@ async def test_upcoming_sync_uses_bounded_windows_and_isolates_failures(monkeypa
         hockey_calls.append(game_date)
         return 1
 
+    async def fake_basketball(session, game_date=None):
+        basketball_calls.append(game_date)
+        return 3
+
     monkeypatch.setattr(match_ingestion, "sync_football_data_league", fake_football)
     monkeypatch.setattr(match_ingestion, "sync_api_hockey_date", fake_hockey)
+    monkeypatch.setattr(match_ingestion, "sync_api_basketball_date", fake_basketball)
 
     result = await match_ingestion.sync_upcoming_match_window(
         db,
         today=today,
         football_days=30,
         hockey_days=3,
+        basketball_days=2,
     )
 
     expected_football_calls = sum(
@@ -46,7 +53,9 @@ async def test_upcoming_sync_uses_bounded_windows_and_isolates_failures(monkeypa
     assert len(football_calls) == expected_football_calls
     assert all(call[1] == today and call[2] == today + timedelta(days=30) for call in football_calls)
     assert hockey_calls == [today + timedelta(days=offset) for offset in range(4)]
+    assert basketball_calls == [today + timedelta(days=offset) for offset in range(3)]
     assert result["football_data_matches"] == (expected_football_calls - 1) * 2
     assert result["api_hockey_matches"] == 4
+    assert result["api_basketball_matches"] == 9
     assert result["errors"] == 1
     assert db.rollbacks == 1

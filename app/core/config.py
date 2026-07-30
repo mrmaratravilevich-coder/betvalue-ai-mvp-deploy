@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     FOOTBALL_DATA_BASE_URL: str = "https://api.football-data.org/v4"
     API_SPORTS_KEY: str | None = None
     API_SPORTS_HOCKEY_BASE_URL: str = "https://v1.hockey.api-sports.io"
+    API_SPORTS_BASKETBALL_BASE_URL: str = "https://v1.basketball.api-sports.io"
     API_TENNIS_KEY: str | None = None
     API_TENNIS_BASE_URL: str = "https://api.api-tennis.com/tennis/"
     STATSBOMB_OPEN_DATA: bool = True
