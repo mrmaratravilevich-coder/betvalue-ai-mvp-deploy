@@ -543,8 +543,8 @@ async def sync_upcoming_match_window(
     *,
     today: date | None = None,
     football_days: int = 30,
-    hockey_days: int = 3,
-    basketball_days: int = 3,
+    hockey_days: int = 1,
+    basketball_days: int = 1,
 ) -> dict[str, int]:
     """
     Lightweight production sync for the public API.
