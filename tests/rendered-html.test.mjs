@@ -30,6 +30,10 @@ test("server-renders the public BetValue AI experience", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
+  const visibleText = html
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ");
   assert.match(html, /<title>BetValue AI — спортивная аналитика<\/title>/i);
   assert.match(html, /Матчи — в одном месте/);
   assert.match(html, /Загружаем матчи/);
@@ -37,6 +41,7 @@ test("server-renders the public BetValue AI experience", async () => {
   assert.match(html, /ФУТБОЛ · ХОККЕЙ · БАСКЕТБОЛ/);
   assert.match(html, /https:\/\/t\.me\/BetValueAI_bot/);
   assert.doesNotMatch(html, /football-data\.org|API-SPORTS|Документация API|PUBLIC API|АРХИТЕКТУРА MVP/i);
+  assert.doesNotMatch(visibleText, /бесплатн|Render|Запускаем сервер|Пробуждаем API/i);
   assert.doesNotMatch(html, /Poisson|Как считаем/i);
   assert.doesNotMatch(html, /54%|68%|Manchester Utd|ожидаем линию/i);
 });

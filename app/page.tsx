@@ -236,7 +236,7 @@ export default function Home() {
           <div className="score">{state === "loading" ? "—" : onlineSources}<span>/3</span></div>
           <p>
             {state === "loading"
-              ? coldStart ? "Пробуждаем API после паузы…" : "Проверяем источники…"
+              ? coldStart ? "Обновляем данные…" : "Проверяем источники…"
               : state === "error" ? "Данные временно недоступны" : "вида спорта доступны"}
           </p>
           <div className="source-mini">
@@ -289,8 +289,8 @@ export default function Home() {
           <div className="state-panel" role="status">
             <div className="loader" aria-hidden="true" />
             <div>
-              <h3>{coldStart ? "Запускаем сервер" : "Загружаем матчи"}</h3>
-              <p>{coldStart ? "Бесплатный сервер Render может просыпаться до 50 секунд." : "Получаем актуальное расписание и расчёты."}</p>
+              <h3>{coldStart ? "Готовим подборку" : "Загружаем матчи"}</h3>
+              <p>{coldStart ? "Сверяем расписание и актуальность данных. Это может занять до 50 секунд." : "Получаем актуальное расписание и расчёты."}</p>
             </div>
           </div>
         )}
