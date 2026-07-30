@@ -13,7 +13,7 @@ services:
       - key: DEBUG
         value: "false"
       - key: CORS_ORIGINS
-        value: https://betvalue-ai-mvp.j-imlemke014ny5.chatgpt.site
+        value: https://bvai.onrender.com,https://betvalue-ai-nmc9.onrender.com,https://betvalue-ai-mvp.j-imlemke014ny5.chatgpt.site
       - key: AUTO_CREATE_SCHEMA
         value: "true"
       - key: DATABASE_URL
