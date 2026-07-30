@@ -1,29 +1,35 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import "./globals.css";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const requestHeaders = await headers();
-  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "localhost:3000";
-  const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.startsWith("localhost") || host.startsWith("127.0.0.1") ? "http" : "https");
-  const imageUrl = `${protocol}://${host}/og.png`;
+const SITE_URL = new URL("https://bvai.onrender.com");
 
-  return {
+export const metadata: Metadata = {
+    metadataBase: SITE_URL,
     title: "BetValue AI — спортивная аналитика",
     description: "Ближайшие матчи по футболу, хоккею и баскетболу, вероятности исходов и понятная оценка надёжности.",
+    alternates: {
+      canonical: "/",
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
     openGraph: {
       title: "BetValue AI — спортивная аналитика",
       description: "Матчи, вероятности исходов и честная оценка неопределённости.",
-      images: [{ url: imageUrl, width: 1536, height: 1024, alt: "BetValue AI" }],
+      url: SITE_URL,
+      siteName: "BetValue AI",
+      locale: "ru_RU",
+      type: "website",
+      images: [{ url: "/og.png", width: 1536, height: 1024, alt: "BetValue AI" }],
     },
     twitter: {
       card: "summary_large_image",
       title: "BetValue AI — спортивная аналитика",
       description: "Матчи, вероятности исходов и честная оценка неопределённости.",
-      images: [imageUrl],
+      images: ["/og.png"],
     },
   };
-}
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <html lang="ru"><body>{children}</body></html>;

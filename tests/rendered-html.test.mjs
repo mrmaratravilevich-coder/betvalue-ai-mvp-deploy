@@ -35,6 +35,9 @@ test("server-renders the public BetValue AI experience", async () => {
     .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
     .replace(/<[^>]+>/g, " ");
   assert.match(html, /<title>BetValue AI — спортивная аналитика<\/title>/i);
+  assert.match(html, /<link rel="canonical" href="https:\/\/bvai\.onrender\.com\/"/i);
+  assert.match(html, /<meta property="og:url" content="https:\/\/bvai\.onrender\.com\/"/i);
+  assert.match(html, /<meta property="og:image" content="https:\/\/bvai\.onrender\.com\/og\.png"/i);
   assert.match(html, /Матчи — в одном месте/);
   assert.match(html, /Загружаем матчи/);
   assert.match(html, /Аналитика — по делу/);
