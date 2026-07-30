@@ -20,6 +20,10 @@ _KNOWN_NAMES = {
     "club friendlies": "Клубные товарищеские матчи",
     "friendly games": "Товарищеские матчи",
     "friendly international": "Международный товарищеский матч",
+    "eurobasket u18": "Евробаскет U18",
+    "eurobasket u18 b": "Евробаскет U18, дивизион B",
+    "nba w": "Женская НБА",
+    "nbl1 west women": "Женская NBL1 West",
     # Current hockey schedule
     "lida": "Лида",
     "baranavichy": "Барановичи",
@@ -58,6 +62,51 @@ _KNOWN_NAMES = {
     "juventus fc": "Ювентус",
     "paris saint-germain fc": "Пари Сен-Жермен",
     "olympique de marseille": "Олимпик Марсель",
+}
+
+# Country and common sports tokens should be translated semantically. A generic
+# transliterator turns "Greece" into "Грееке" and "Spain" into "Спаин", which is
+# technically Cyrillic but unsuitable for a Russian-language product.
+_KNOWN_PHRASES = {
+    "czech republic": "Чехия",
+    "great britain": "Великобритания",
+    "bosnia & herzegovina": "Босния и Герцеговина",
+    "new york": "Нью-Йорк",
+}
+
+_KNOWN_TOKENS = {
+    "greece": "Греция",
+    "spain": "Испания",
+    "serbia": "Сербия",
+    "bulgaria": "Болгария",
+    "slovakia": "Словакия",
+    "estonia": "Эстония",
+    "turkey": "Турция",
+    "italy": "Италия",
+    "france": "Франция",
+    "germany": "Германия",
+    "austria": "Австрия",
+    "lithuania": "Литва",
+    "cyprus": "Кипр",
+    "sweden": "Швеция",
+    "ukraine": "Украина",
+    "norway": "Норвегия",
+    "romania": "Румыния",
+    "montenegro": "Черногория",
+    "azerbaijan": "Азербайджан",
+    "netherlands": "Нидерланды",
+    "georgia": "Грузия",
+    "iceland": "Исландия",
+    "switzerland": "Швейцария",
+    "croatia": "Хорватия",
+    "poland": "Польша",
+    "women": "женщины",
+    "city": "Сити",
+    "united": "Юнайтед",
+    "sky": "Скай",
+    "aces": "Эйсес",
+    "liberty": "Либерти",
+    "lynx": "Линкс",
 }
 
 _SEQUENCES = (
@@ -129,4 +178,23 @@ def localize_name(value: str) -> str:
     known = _KNOWN_NAMES.get(cleaned.casefold())
     if known:
         return known
-    return re.sub(r"[A-Za-zÀ-ž0-9]+", lambda match: _transliterate_word(match.group()), cleaned)
+
+    localized = cleaned
+    for latin, russian in sorted(_KNOWN_PHRASES.items(), key=lambda item: len(item[0]), reverse=True):
+        localized = re.sub(
+            rf"(?<![A-Za-zÀ-ž]){re.escape(latin)}(?![A-Za-zÀ-ž])",
+            russian,
+            localized,
+            flags=re.IGNORECASE,
+        )
+
+    def localize_word(match: re.Match[str]) -> str:
+        word = match.group()
+        if re.fullmatch(r"U\d{1,2}", word, flags=re.IGNORECASE):
+            return word.upper()
+        if word.casefold() == "w":
+            return "Ж"
+        semantic = _KNOWN_TOKENS.get(_strip_diacritics(word).casefold())
+        return semantic if semantic is not None else _transliterate_word(word)
+
+    return re.sub(r"[A-Za-zÀ-ž0-9]+", localize_word, localized)

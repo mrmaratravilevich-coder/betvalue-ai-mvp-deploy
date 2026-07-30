@@ -236,13 +236,13 @@ async def generate_predictions_all_leagues(db: AsyncSession) -> dict[str, int]:
     в терминах ТЗ — здесь это "обучение" силы команд + расчёт вероятностей).
     """
     result: dict[str, int] = {}
-    # Баскетбол требует отдельной модели для двух исходов и счёта в очках.
-    # Расписание показываем сразу, а футбольный расчёт для него не запускаем.
+    # Poisson v1 обучен только для футбольного счёта. Хоккей и баскетбол
+    # показываем в расписании, но не публикуем для них футбольные вероятности.
     leagues = (
         await db.execute(
             select(League)
             .join(Sport)
-            .where(Sport.code.in_(("football", "hockey")))
+            .where(Sport.code == "football")
         )
     ).scalars().all()
     for league in leagues:
