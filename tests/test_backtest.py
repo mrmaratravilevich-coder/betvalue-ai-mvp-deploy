@@ -26,6 +26,23 @@ def test_backtest_uses_only_earlier_matches() -> None:
     assert [prediction.training_matches for prediction in predictions] == list(range(4, 12))
 
 
+def test_backtest_rolling_window_caps_training_history() -> None:
+    predictions = evaluate_chronologically(
+        _matches(),
+        min_train_matches=4,
+        min_team_games=1,
+        history_window=6,
+    )
+
+    assert len(predictions) == 8
+    assert max(prediction.training_matches for prediction in predictions) == 6
+
+
+def test_backtest_rejects_window_smaller_than_warmup() -> None:
+    with pytest.raises(ValueError, match="history_window"):
+        evaluate_chronologically([], min_train_matches=100, history_window=99)
+
+
 def test_input_order_does_not_change_predictions() -> None:
     matches = _matches()
 

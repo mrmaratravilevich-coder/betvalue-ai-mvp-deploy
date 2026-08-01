@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import deque
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from math import log
@@ -73,9 +74,14 @@ def evaluate_chronologically(
     *,
     min_train_matches: int = 100,
     min_team_games: int = 3,
+    history_window: int | None = None,
 ) -> list[BacktestPrediction]:
     """Predict every match before adding its result to the training state."""
+    if history_window is not None and history_window < min_train_matches:
+        raise ValueError("history_window must be at least min_train_matches")
+
     ordered = sorted(matches, key=lambda match: match.kickoff_at)
+    recent_history: deque[HistoricalMatch] = deque()
     home_stats: dict[int, _SideStats] = {}
     away_stats: dict[int, _SideStats] = {}
     total_home_goals = 0
@@ -132,6 +138,22 @@ def evaluate_chronologically(
         total_away_goals += match.away_score
         outcome_counts[_outcome(match.home_score, match.away_score)] += 1
         history_count += 1
+        recent_history.append(match)
+
+        if history_window is not None and history_count > history_window:
+            expired = recent_history.popleft()
+            expired_home = home_stats[expired.home_team_id]
+            expired_home.games -= 1
+            expired_home.goals_for -= expired.home_score
+            expired_home.goals_against -= expired.away_score
+            expired_away = away_stats[expired.away_team_id]
+            expired_away.games -= 1
+            expired_away.goals_for -= expired.away_score
+            expired_away.goals_against -= expired.home_score
+            total_home_goals -= expired.home_score
+            total_away_goals -= expired.away_score
+            outcome_counts[_outcome(expired.home_score, expired.away_score)] -= 1
+            history_count -= 1
 
     return predictions
 
@@ -200,6 +222,7 @@ async def backtest_football_league(
     league_id: int,
     *,
     min_train_matches: int = 100,
+    history_window: int | None = None,
 ) -> BacktestReport:
     rows = (
         await db.execute(
@@ -226,7 +249,11 @@ async def backtest_football_league(
         )
         for match in rows
     ]
-    predictions = evaluate_chronologically(historical, min_train_matches=min_train_matches)
+    predictions = evaluate_chronologically(
+        historical,
+        min_train_matches=min_train_matches,
+        history_window=history_window,
+    )
     return summarize_backtest(predictions, skipped_warmup=min(min_train_matches, len(historical)))
 
 
@@ -257,3 +284,38 @@ async def backtest_all_football_leagues(
             continue
         reports[league_id] = report.to_dict()
     return reports
+
+
+async def compare_football_history_windows(
+    db: AsyncSession,
+    *,
+    min_train_matches: int = 100,
+    windows: tuple[int | None, ...] = (None, 120, 200),
+) -> dict[int, dict[str, dict]]:
+    """Compare full-history and rolling-history variants on every football league."""
+    league_ids = (
+        await db.execute(
+            select(League.id)
+            .join(Sport)
+            .where(Sport.code == "football")
+            .order_by(League.id)
+        )
+    ).scalars().all()
+
+    comparison: dict[int, dict[str, dict]] = {}
+    for league_id in league_ids:
+        variants: dict[str, dict] = {}
+        for window in windows:
+            try:
+                report = await backtest_football_league(
+                    db,
+                    league_id,
+                    min_train_matches=min_train_matches,
+                    history_window=window,
+                )
+            except ValueError:
+                continue
+            variants["full" if window is None else f"window_{window}"] = report.to_dict()
+        if variants:
+            comparison[league_id] = variants
+    return comparison
