@@ -250,22 +250,28 @@ async def generate_predictions_for_league(
                 "expected_home_goals": round(probs.expected_home_goals, 3),
                 "expected_away_goals": round(probs.expected_away_goals, 3),
             },
+            # Место под будущие модели: "xgboost": {...}, "lightgbm": {...}, "logistic_regression": {...}
+        }
+        match_winner_ensemble = {
+            **ensemble,
             "calibration": {
                 "method": "temperature",
                 "temperature": round(model.calibration_temperature, 3),
                 "historical_predictions": model.calibration_predictions,
             },
-            # Место под будущие модели: "xgboost": {...}, "lightgbm": {...}, "logistic_regression": {...}
         }
 
         await _upsert_prediction(
-            db, match.id, markets[MarketCode.MATCH_WINNER].id, "home", match_winner["home"], ensemble, uncertainty
+            db, match.id, markets[MarketCode.MATCH_WINNER].id, "home", match_winner["home"],
+            match_winner_ensemble, uncertainty
         )
         await _upsert_prediction(
-            db, match.id, markets[MarketCode.MATCH_WINNER].id, "draw", match_winner["draw"], ensemble, uncertainty
+            db, match.id, markets[MarketCode.MATCH_WINNER].id, "draw", match_winner["draw"],
+            match_winner_ensemble, uncertainty
         )
         await _upsert_prediction(
-            db, match.id, markets[MarketCode.MATCH_WINNER].id, "away", match_winner["away"], ensemble, uncertainty
+            db, match.id, markets[MarketCode.MATCH_WINNER].id, "away", match_winner["away"],
+            match_winner_ensemble, uncertainty
         )
         await _upsert_prediction(
             db, match.id, markets[MarketCode.TOTAL_OVER].id, f"over_{total_line}", probs.over_line, ensemble,
