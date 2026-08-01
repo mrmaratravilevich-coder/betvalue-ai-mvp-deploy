@@ -1,4 +1,7 @@
-from app.services.prediction_engine import LeagueModel, TeamStrength
+import pytest
+
+from app.services.models.poisson_model import predict_match
+from app.services.prediction_engine import LeagueModel, TeamStrength, _calibrated_match_winner
 
 
 def test_uncertainty_is_maximum_without_team_history() -> None:
@@ -18,3 +21,12 @@ def test_uncertainty_drops_with_relevant_home_and_away_history() -> None:
     )
 
     assert model.uncertainty_for(10, 20) == 0.4
+
+
+def test_match_winner_calibration_is_normalized_and_preserves_ranking() -> None:
+    probabilities = predict_match(1.8, 0.9)
+    calibrated = _calibrated_match_winner(probabilities, 1.4)
+
+    assert sum(calibrated.values()) == pytest.approx(1.0)
+    assert max(calibrated, key=calibrated.get) == "home"
+    assert calibrated["home"] < probabilities.home_win

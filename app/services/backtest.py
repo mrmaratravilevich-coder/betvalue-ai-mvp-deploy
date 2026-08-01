@@ -127,6 +127,34 @@ def _select_temperature(
     )
 
 
+def fit_temperature_chronologically(
+    matches: list[HistoricalMatch],
+    *,
+    min_train_matches: int = 100,
+    min_calibration_predictions: int = 50,
+    candidates: tuple[float, ...] = (0.7, 0.85, 1.0, 1.2, 1.4),
+) -> float:
+    """Fit the temperature for a future match from past matches only."""
+    raw_predictions = evaluate_chronologically(
+        matches,
+        min_train_matches=min_train_matches,
+    )
+    if len(raw_predictions) < min_calibration_predictions:
+        return 1.0
+    history = [
+        (
+            {
+                "home": prediction.home_probability,
+                "draw": prediction.draw_probability,
+                "away": prediction.away_probability,
+            },
+            prediction.actual,
+        )
+        for prediction in raw_predictions
+    ]
+    return _select_temperature(history, candidates)
+
+
 def evaluate_chronologically(
     matches: list[HistoricalMatch],
     *,

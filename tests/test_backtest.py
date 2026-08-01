@@ -9,6 +9,7 @@ from app.services.backtest import (
     _temperature_scale,
     _update_elo,
     evaluate_chronologically,
+    fit_temperature_chronologically,
     summarize_backtest,
 )
 
@@ -142,6 +143,25 @@ def test_invalid_temperature_candidates_are_rejected() -> None:
             min_train_matches=4,
             calibration_temperatures=(0.0, 1.0),
         )
+
+
+def test_temperature_fit_falls_back_without_enough_predictions() -> None:
+    assert fit_temperature_chronologically(
+        _matches(),
+        min_train_matches=4,
+        min_calibration_predictions=20,
+    ) == 1.0
+
+
+def test_temperature_fit_returns_candidate_for_future_prediction() -> None:
+    temperature = fit_temperature_chronologically(
+        _matches(),
+        min_train_matches=4,
+        min_calibration_predictions=2,
+        candidates=(0.8, 1.0, 1.2),
+    )
+
+    assert temperature in (0.8, 1.0, 1.2)
 
 
 def test_input_order_does_not_change_predictions() -> None:

@@ -21,14 +21,18 @@ from app.models.enums import MarketCode, MatchStatus
 from app.models.match import Match
 from app.models.prediction import Prediction
 from app.models.team import League, Sport
+from app.services.backtest import HistoricalMatch, _temperature_scale, fit_temperature_chronologically
 from app.services.markets import get_or_create_market
-from app.services.models.poisson_model import predict_match
+from app.services.models.poisson_model import MatchProbabilities, predict_match
 
 logger = logging.getLogger(__name__)
 
 MODEL_VERSION = "poisson-v1"
 DEFAULT_TOTAL_LINE = 2.5
 MIN_TEAM_GAMES = 3  # ниже этого числа матчей команды используем среднюю по лиге силу
+CALIBRATION_MIN_TRAIN_MATCHES = 100
+CALIBRATION_MIN_PREDICTIONS = 50
+CALIBRATION_TEMPERATURES = (0.7, 0.85, 1.0, 1.2, 1.4)
 
 
 @dataclass
@@ -46,6 +50,8 @@ class LeagueModel:
     league_avg_home_goals: float
     league_avg_away_goals: float
     team_strengths: dict[int, TeamStrength] = field(default_factory=dict)
+    calibration_temperature: float = 1.0
+    calibration_predictions: int = 0
 
     def uncertainty_for(self, home_team_id: int, away_team_id: int) -> float:
         """
@@ -110,6 +116,36 @@ async def compute_league_model(db: AsyncSession, league_id: int) -> LeagueModel 
     home_rows = (await db.execute(home_stats_stmt)).all()
     away_rows = (await db.execute(away_stats_stmt)).all()
 
+    historical_rows = (
+        await db.execute(
+            select(Match)
+            .where(
+                Match.league_id == league_id,
+                Match.status == MatchStatus.FINISHED,
+                Match.home_score.is_not(None),
+                Match.away_score.is_not(None),
+            )
+            .order_by(Match.kickoff_at)
+        )
+    ).scalars().all()
+    historical = [
+        HistoricalMatch(
+            kickoff_at=match.kickoff_at,
+            home_team_id=match.home_team_id,
+            away_team_id=match.away_team_id,
+            home_score=match.home_score,
+            away_score=match.away_score,
+        )
+        for match in historical_rows
+    ]
+    calibration_predictions = max(0, len(historical) - CALIBRATION_MIN_TRAIN_MATCHES)
+    calibration_temperature = fit_temperature_chronologically(
+        historical,
+        min_train_matches=CALIBRATION_MIN_TRAIN_MATCHES,
+        min_calibration_predictions=CALIBRATION_MIN_PREDICTIONS,
+        candidates=CALIBRATION_TEMPERATURES,
+    )
+
     strengths: dict[int, TeamStrength] = {}
 
     for team_id, goals_for, goals_against, games in home_rows:
@@ -130,6 +166,22 @@ async def compute_league_model(db: AsyncSession, league_id: int) -> LeagueModel 
         league_avg_home_goals=league_avg_home_goals,
         league_avg_away_goals=league_avg_away_goals,
         team_strengths=strengths,
+        calibration_temperature=calibration_temperature,
+        calibration_predictions=calibration_predictions,
+    )
+
+
+def _calibrated_match_winner(
+    probabilities: MatchProbabilities,
+    temperature: float,
+) -> dict[str, float]:
+    return _temperature_scale(
+        {
+            "home": probabilities.home_win,
+            "draw": probabilities.draw,
+            "away": probabilities.away_win,
+        },
+        temperature,
     )
 
 
@@ -191,23 +243,29 @@ async def generate_predictions_for_league(
         expected_away_goals = away.attack_away * home.defense_home * model.league_avg_away_goals
 
         probs = predict_match(expected_home_goals, expected_away_goals, total_line=total_line)
+        match_winner = _calibrated_match_winner(probs, model.calibration_temperature)
         uncertainty = model.uncertainty_for(match.home_team_id, match.away_team_id)
         ensemble = {
             "poisson": {
                 "expected_home_goals": round(probs.expected_home_goals, 3),
                 "expected_away_goals": round(probs.expected_away_goals, 3),
-            }
+            },
+            "calibration": {
+                "method": "temperature",
+                "temperature": round(model.calibration_temperature, 3),
+                "historical_predictions": model.calibration_predictions,
+            },
             # Место под будущие модели: "xgboost": {...}, "lightgbm": {...}, "logistic_regression": {...}
         }
 
         await _upsert_prediction(
-            db, match.id, markets[MarketCode.MATCH_WINNER].id, "home", probs.home_win, ensemble, uncertainty
+            db, match.id, markets[MarketCode.MATCH_WINNER].id, "home", match_winner["home"], ensemble, uncertainty
         )
         await _upsert_prediction(
-            db, match.id, markets[MarketCode.MATCH_WINNER].id, "draw", probs.draw, ensemble, uncertainty
+            db, match.id, markets[MarketCode.MATCH_WINNER].id, "draw", match_winner["draw"], ensemble, uncertainty
         )
         await _upsert_prediction(
-            db, match.id, markets[MarketCode.MATCH_WINNER].id, "away", probs.away_win, ensemble, uncertainty
+            db, match.id, markets[MarketCode.MATCH_WINNER].id, "away", match_winner["away"], ensemble, uncertainty
         )
         await _upsert_prediction(
             db, match.id, markets[MarketCode.TOTAL_OVER].id, f"over_{total_line}", probs.over_line, ensemble,
