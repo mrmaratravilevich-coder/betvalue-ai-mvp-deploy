@@ -88,6 +88,45 @@ def _update_elo(
     return home_rating + change, away_rating - change
 
 
+def _temperature_scale(
+    probabilities: dict[str, float],
+    temperature: float,
+) -> dict[str, float]:
+    """Flatten or sharpen a probability vector while preserving its ranking."""
+    if temperature <= 0:
+        raise ValueError("temperature must be positive")
+    adjusted = {
+        outcome: max(probability, 1e-15) ** (1 / temperature)
+        for outcome, probability in probabilities.items()
+    }
+    total = sum(adjusted.values())
+    return {outcome: probability / total for outcome, probability in adjusted.items()}
+
+
+def _select_temperature(
+    history: list[tuple[dict[str, float], str]],
+    candidates: tuple[float, ...],
+) -> float:
+    """Choose a temperature using only previously observed predictions."""
+    if not candidates or any(temperature <= 0 for temperature in candidates):
+        raise ValueError("temperature candidates must be positive")
+
+    def historical_log_loss(temperature: float) -> float:
+        return sum(
+            -log(_temperature_scale(probabilities, temperature)[actual])
+            for probabilities, actual in history
+        )
+
+    return min(
+        candidates,
+        key=lambda temperature: (
+            historical_log_loss(temperature),
+            abs(temperature - 1.0),
+            temperature,
+        ),
+    )
+
+
 def evaluate_chronologically(
     matches: list[HistoricalMatch],
     *,
@@ -98,10 +137,19 @@ def evaluate_chronologically(
     elo_k_factor: float = 20.0,
     elo_home_advantage: float = 65.0,
     dixon_coles_rho: float = 0.0,
+    calibration_temperatures: tuple[float, ...] | None = None,
+    calibration_min_predictions: int = 50,
 ) -> list[BacktestPrediction]:
     """Predict every match before adding its result to the training state."""
     if history_window is not None and history_window < min_train_matches:
         raise ValueError("history_window must be at least min_train_matches")
+    if calibration_temperatures is not None:
+        if calibration_min_predictions < 1:
+            raise ValueError("calibration_min_predictions must be positive")
+        if not calibration_temperatures or any(
+            temperature <= 0 for temperature in calibration_temperatures
+        ):
+            raise ValueError("temperature candidates must be positive")
 
     ordered = sorted(matches, key=lambda match: match.kickoff_at)
     recent_history: deque[HistoricalMatch] = deque()
@@ -112,6 +160,7 @@ def evaluate_chronologically(
     history_count = 0
     outcome_counts = {"home": 0, "draw": 0, "away": 0}
     elo_ratings: dict[int, float] = {}
+    calibration_history: list[tuple[dict[str, float], str]] = []
     predictions: list[BacktestPrediction] = []
 
     for match in ordered:
@@ -140,26 +189,41 @@ def evaluate_chronologically(
                 expected_away_goals,
                 dixon_coles_rho=dixon_coles_rho,
             )
-            probability_by_outcome = {
+            raw_probability_by_outcome = {
                 "home": probabilities.home_win,
                 "draw": probabilities.draw,
                 "away": probabilities.away_win,
             }
+            probability_by_outcome = raw_probability_by_outcome
+            if (
+                calibration_temperatures is not None
+                and len(calibration_history) >= calibration_min_predictions
+            ):
+                temperature = _select_temperature(
+                    calibration_history,
+                    calibration_temperatures,
+                )
+                probability_by_outcome = _temperature_scale(
+                    raw_probability_by_outcome,
+                    temperature,
+                )
+            actual = _outcome(match.home_score, match.away_score)
             baseline_total = history_count + 3
             predictions.append(
                 BacktestPrediction(
                     kickoff_at=match.kickoff_at,
                     training_matches=history_count,
-                    actual=_outcome(match.home_score, match.away_score),
+                    actual=actual,
                     predicted=max(probability_by_outcome, key=probability_by_outcome.get),
-                    home_probability=probabilities.home_win,
-                    draw_probability=probabilities.draw,
-                    away_probability=probabilities.away_win,
+                    home_probability=probability_by_outcome["home"],
+                    draw_probability=probability_by_outcome["draw"],
+                    away_probability=probability_by_outcome["away"],
                     baseline_home_probability=(outcome_counts["home"] + 1) / baseline_total,
                     baseline_draw_probability=(outcome_counts["draw"] + 1) / baseline_total,
                     baseline_away_probability=(outcome_counts["away"] + 1) / baseline_total,
                 )
             )
+            calibration_history.append((raw_probability_by_outcome, actual))
 
         home = home_stats.setdefault(match.home_team_id, _SideStats())
         home.games += 1
@@ -273,6 +337,8 @@ async def backtest_football_league(
     history_window: int | None = None,
     elo_weight: float = 0.0,
     dixon_coles_rho: float = 0.0,
+    calibration_temperatures: tuple[float, ...] | None = None,
+    calibration_min_predictions: int = 50,
 ) -> BacktestReport:
     rows = (
         await db.execute(
@@ -305,6 +371,8 @@ async def backtest_football_league(
         history_window=history_window,
         elo_weight=elo_weight,
         dixon_coles_rho=dixon_coles_rho,
+        calibration_temperatures=calibration_temperatures,
+        calibration_min_predictions=calibration_min_predictions,
     )
     return summarize_backtest(predictions, skipped_warmup=min(min_train_matches, len(historical)))
 
@@ -438,6 +506,48 @@ async def compare_football_dixon_coles(
             except ValueError:
                 continue
             variants["poisson" if rho == 0 else f"dc_{rho:g}"] = report.to_dict()
+        if variants:
+            comparison[league_id] = variants
+    return comparison
+
+
+async def compare_football_calibration(
+    db: AsyncSession,
+    *,
+    min_train_matches: int = 100,
+    calibration_min_predictions: int = 50,
+) -> dict[int, dict[str, dict]]:
+    """Compare leakage-safe online temperature calibration grids by league."""
+    league_ids = (
+        await db.execute(
+            select(League.id)
+            .join(Sport)
+            .where(Sport.code == "football")
+            .order_by(League.id)
+        )
+    ).scalars().all()
+    variants_to_temperatures: dict[str, tuple[float, ...] | None] = {
+        "poisson": None,
+        "calibration_gentle": (0.9, 1.0, 1.1),
+        "calibration_standard": (0.8, 0.9, 1.0, 1.1, 1.2),
+        "calibration_wide": (0.7, 0.85, 1.0, 1.2, 1.4),
+    }
+
+    comparison: dict[int, dict[str, dict]] = {}
+    for league_id in league_ids:
+        variants: dict[str, dict] = {}
+        for name, temperatures in variants_to_temperatures.items():
+            try:
+                report = await backtest_football_league(
+                    db,
+                    league_id,
+                    min_train_matches=min_train_matches,
+                    calibration_temperatures=temperatures,
+                    calibration_min_predictions=calibration_min_predictions,
+                )
+            except ValueError:
+                continue
+            variants[name] = report.to_dict()
         if variants:
             comparison[league_id] = variants
     return comparison

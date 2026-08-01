@@ -5,6 +5,8 @@ import pytest
 from app.services.backtest import (
     HistoricalMatch,
     _elo_expected_home,
+    _select_temperature,
+    _temperature_scale,
     _update_elo,
     evaluate_chronologically,
     summarize_backtest,
@@ -83,6 +85,63 @@ def test_zero_dixon_coles_rho_preserves_poisson_predictions() -> None:
     )
 
     assert zero_rho == baseline
+
+
+def test_temperature_one_preserves_probabilities() -> None:
+    probabilities = {"home": 0.6, "draw": 0.25, "away": 0.15}
+
+    assert _temperature_scale(probabilities, 1.0) == pytest.approx(probabilities)
+
+
+def test_higher_temperature_flattens_probabilities() -> None:
+    probabilities = {"home": 0.7, "draw": 0.2, "away": 0.1}
+    calibrated = _temperature_scale(probabilities, 1.5)
+
+    assert sum(calibrated.values()) == pytest.approx(1.0)
+    assert calibrated["home"] < probabilities["home"]
+    assert calibrated["away"] > probabilities["away"]
+
+
+def test_temperature_selection_uses_supplied_history() -> None:
+    overconfident_history = [
+        ({"home": 0.8, "draw": 0.1, "away": 0.1}, "away"),
+        ({"home": 0.8, "draw": 0.1, "away": 0.1}, "draw"),
+    ]
+
+    assert _select_temperature(overconfident_history, (0.8, 1.0, 1.4)) == 1.4
+
+
+def test_online_calibration_waits_for_prior_predictions() -> None:
+    baseline = evaluate_chronologically(_matches(), min_train_matches=4, min_team_games=1)
+    calibrated = evaluate_chronologically(
+        _matches(),
+        min_train_matches=4,
+        min_team_games=1,
+        calibration_temperatures=(0.8, 1.0, 1.2),
+        calibration_min_predictions=2,
+    )
+
+    assert calibrated[:2] == baseline[:2]
+    assert (
+        calibrated[3].home_probability,
+        calibrated[3].draw_probability,
+        calibrated[3].away_probability,
+    ) != pytest.approx(
+        (
+            baseline[3].home_probability,
+            baseline[3].draw_probability,
+            baseline[3].away_probability,
+        )
+    )
+
+
+def test_invalid_temperature_candidates_are_rejected() -> None:
+    with pytest.raises(ValueError, match="temperature candidates"):
+        evaluate_chronologically(
+            _matches(),
+            min_train_matches=4,
+            calibration_temperatures=(0.0, 1.0),
+        )
 
 
 def test_input_order_does_not_change_predictions() -> None:
