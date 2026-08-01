@@ -2,7 +2,13 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from app.services.backtest import HistoricalMatch, evaluate_chronologically, summarize_backtest
+from app.services.backtest import (
+    HistoricalMatch,
+    _elo_expected_home,
+    _update_elo,
+    evaluate_chronologically,
+    summarize_backtest,
+)
 
 
 def _matches(count: int = 12) -> list[HistoricalMatch]:
@@ -41,6 +47,30 @@ def test_backtest_rolling_window_caps_training_history() -> None:
 def test_backtest_rejects_window_smaller_than_warmup() -> None:
     with pytest.raises(ValueError, match="history_window"):
         evaluate_chronologically([], min_train_matches=100, history_window=99)
+
+
+def test_elo_expected_result_reflects_home_advantage() -> None:
+    assert _elo_expected_home(1500, 1500) > 0.5
+
+
+def test_elo_update_is_zero_sum() -> None:
+    new_home, new_away = _update_elo(1500, 1500, home_score=0, away_score=1)
+
+    assert new_home < 1500
+    assert new_away > 1500
+    assert new_home + new_away == pytest.approx(3000)
+
+
+def test_zero_elo_weight_preserves_poisson_predictions() -> None:
+    baseline = evaluate_chronologically(_matches(), min_train_matches=4, min_team_games=1)
+    zero_weight = evaluate_chronologically(
+        _matches(),
+        min_train_matches=4,
+        min_team_games=1,
+        elo_weight=0.0,
+    )
+
+    assert zero_weight == baseline
 
 
 def test_input_order_does_not_change_predictions() -> None:

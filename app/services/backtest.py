@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import deque
 from dataclasses import asdict, dataclass
 from datetime import datetime
-from math import log
+from math import exp, log
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -69,12 +69,34 @@ def _outcome(home_score: int, away_score: int) -> str:
     return "draw"
 
 
+def _elo_expected_home(home_rating: float, away_rating: float, home_advantage: float = 65.0) -> float:
+    return 1 / (1 + 10 ** (-(home_rating + home_advantage - away_rating) / 400))
+
+
+def _update_elo(
+    home_rating: float,
+    away_rating: float,
+    *,
+    home_score: int,
+    away_score: int,
+    k_factor: float = 20.0,
+    home_advantage: float = 65.0,
+) -> tuple[float, float]:
+    expected_home = _elo_expected_home(home_rating, away_rating, home_advantage)
+    actual_home = 1.0 if home_score > away_score else 0.0 if home_score < away_score else 0.5
+    change = k_factor * (actual_home - expected_home)
+    return home_rating + change, away_rating - change
+
+
 def evaluate_chronologically(
     matches: list[HistoricalMatch],
     *,
     min_train_matches: int = 100,
     min_team_games: int = 3,
     history_window: int | None = None,
+    elo_weight: float = 0.0,
+    elo_k_factor: float = 20.0,
+    elo_home_advantage: float = 65.0,
 ) -> list[BacktestPrediction]:
     """Predict every match before adding its result to the training state."""
     if history_window is not None and history_window < min_train_matches:
@@ -88,6 +110,7 @@ def evaluate_chronologically(
     total_away_goals = 0
     history_count = 0
     outcome_counts = {"home": 0, "draw": 0, "away": 0}
+    elo_ratings: dict[int, float] = {}
     predictions: list[BacktestPrediction] = []
 
     for match in ordered:
@@ -101,10 +124,17 @@ def evaluate_chronologically(
             home_defense = home.goals_against / home.games / league_away if home.games >= min_team_games else 1.0
             away_attack = away.goals_for / away.games / league_away if away.games >= min_team_games else 1.0
             away_defense = away.goals_against / away.games / league_home if away.games >= min_team_games else 1.0
-            probabilities = predict_match(
-                home_attack * away_defense * league_home,
-                away_attack * home_defense * league_away,
-            )
+            expected_home_goals = home_attack * away_defense * league_home
+            expected_away_goals = away_attack * home_defense * league_away
+            if elo_weight:
+                elo_difference = (
+                    elo_ratings.get(match.home_team_id, 1500.0)
+                    - elo_ratings.get(match.away_team_id, 1500.0)
+                )
+                elo_multiplier = exp(elo_weight * elo_difference / 400)
+                expected_home_goals *= elo_multiplier
+                expected_away_goals /= elo_multiplier
+            probabilities = predict_match(expected_home_goals, expected_away_goals)
             probability_by_outcome = {
                 "home": probabilities.home_win,
                 "draw": probabilities.draw,
@@ -139,6 +169,19 @@ def evaluate_chronologically(
         outcome_counts[_outcome(match.home_score, match.away_score)] += 1
         history_count += 1
         recent_history.append(match)
+
+        current_home_elo = elo_ratings.get(match.home_team_id, 1500.0)
+        current_away_elo = elo_ratings.get(match.away_team_id, 1500.0)
+        new_home_elo, new_away_elo = _update_elo(
+            current_home_elo,
+            current_away_elo,
+            home_score=match.home_score,
+            away_score=match.away_score,
+            k_factor=elo_k_factor,
+            home_advantage=elo_home_advantage,
+        )
+        elo_ratings[match.home_team_id] = new_home_elo
+        elo_ratings[match.away_team_id] = new_away_elo
 
         if history_window is not None and history_count > history_window:
             expired = recent_history.popleft()
@@ -223,6 +266,7 @@ async def backtest_football_league(
     *,
     min_train_matches: int = 100,
     history_window: int | None = None,
+    elo_weight: float = 0.0,
 ) -> BacktestReport:
     rows = (
         await db.execute(
@@ -253,6 +297,7 @@ async def backtest_football_league(
         historical,
         min_train_matches=min_train_matches,
         history_window=history_window,
+        elo_weight=elo_weight,
     )
     return summarize_backtest(predictions, skipped_warmup=min(min_train_matches, len(historical)))
 
@@ -316,6 +361,41 @@ async def compare_football_history_windows(
             except ValueError:
                 continue
             variants["full" if window is None else f"window_{window}"] = report.to_dict()
+        if variants:
+            comparison[league_id] = variants
+    return comparison
+
+
+async def compare_football_elo_weights(
+    db: AsyncSession,
+    *,
+    min_train_matches: int = 100,
+    weights: tuple[float, ...] = (0.0, 0.1, 0.2, 0.3),
+) -> dict[int, dict[str, dict]]:
+    """Compare the Poisson baseline with leakage-safe chronological Elo adjustments."""
+    league_ids = (
+        await db.execute(
+            select(League.id)
+            .join(Sport)
+            .where(Sport.code == "football")
+            .order_by(League.id)
+        )
+    ).scalars().all()
+
+    comparison: dict[int, dict[str, dict]] = {}
+    for league_id in league_ids:
+        variants: dict[str, dict] = {}
+        for weight in weights:
+            try:
+                report = await backtest_football_league(
+                    db,
+                    league_id,
+                    min_train_matches=min_train_matches,
+                    elo_weight=weight,
+                )
+            except ValueError:
+                continue
+            variants["poisson" if weight == 0 else f"elo_{weight:g}"] = report.to_dict()
         if variants:
             comparison[league_id] = variants
     return comparison
