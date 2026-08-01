@@ -8,6 +8,7 @@
     python -m app.cli sync-all
     python -m app.cli predict
     python -m app.cli backtest-football LEAGUE_ID [MIN_TRAIN_MATCHES]
+    python -m app.cli backtest-football-all [MIN_TRAIN_MATCHES]
     python -m app.cli list-betfair-competitions
     python -m app.cli sync-odds
     python -m app.cli find-ev
@@ -71,6 +72,15 @@ async def _backtest_football(league_id: int, min_train_matches: int) -> None:
         print(report.to_dict())
 
 
+async def _backtest_football_all(min_train_matches: int) -> None:
+    async with AsyncSessionLocal() as db:
+        reports = await backtest.backtest_all_football_leagues(
+            db,
+            min_train_matches=min_train_matches,
+        )
+        print(reports)
+
+
 def main() -> None:
     if len(sys.argv) < 2:
         print(__doc__)
@@ -98,6 +108,11 @@ def main() -> None:
             raise SystemExit("Использование: backtest-football LEAGUE_ID [MIN_TRAIN_MATCHES]")
         minimum = int(sys.argv[3]) if len(sys.argv) == 4 else 100
         asyncio.run(_backtest_football(int(sys.argv[2]), minimum))
+    elif command == "backtest-football-all":
+        if len(sys.argv) not in (2, 3):
+            raise SystemExit("Использование: backtest-football-all [MIN_TRAIN_MATCHES]")
+        minimum = int(sys.argv[2]) if len(sys.argv) == 3 else 100
+        asyncio.run(_backtest_football_all(minimum))
     elif command == "list-betfair-competitions":
         asyncio.run(_list_betfair_competitions())
     elif command == "sync-odds":

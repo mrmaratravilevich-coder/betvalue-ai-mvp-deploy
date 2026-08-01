@@ -228,3 +228,32 @@ async def backtest_football_league(
     ]
     predictions = evaluate_chronologically(historical, min_train_matches=min_train_matches)
     return summarize_backtest(predictions, skipped_warmup=min(min_train_matches, len(historical)))
+
+
+async def backtest_all_football_leagues(
+    db: AsyncSession,
+    *,
+    min_train_matches: int = 100,
+) -> dict[int, dict]:
+    """Run the chronological backtest for every football league with enough data."""
+    league_ids = (
+        await db.execute(
+            select(League.id)
+            .join(Sport)
+            .where(Sport.code == "football")
+            .order_by(League.id)
+        )
+    ).scalars().all()
+
+    reports: dict[int, dict] = {}
+    for league_id in league_ids:
+        try:
+            report = await backtest_football_league(
+                db,
+                league_id,
+                min_train_matches=min_train_matches,
+            )
+        except ValueError:
+            continue
+        reports[league_id] = report.to_dict()
+    return reports
