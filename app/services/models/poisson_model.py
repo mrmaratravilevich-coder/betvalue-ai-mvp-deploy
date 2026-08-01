@@ -32,14 +32,55 @@ class MatchProbabilities:
     total_line: float
 
 
-def score_matrix(expected_home_goals: float, expected_away_goals: float, max_goals: int = 10) -> list[list[float]]:
+def _dixon_coles_factor(
+    home_goals: int,
+    away_goals: int,
+    expected_home_goals: float,
+    expected_away_goals: float,
+    rho: float,
+) -> float:
+    """Return the Dixon-Coles correction for correlated low-score results."""
+    if home_goals == 0 and away_goals == 0:
+        return 1 - expected_home_goals * expected_away_goals * rho
+    if home_goals == 0 and away_goals == 1:
+        return 1 + expected_home_goals * rho
+    if home_goals == 1 and away_goals == 0:
+        return 1 + expected_away_goals * rho
+    if home_goals == 1 and away_goals == 1:
+        return 1 - rho
+    return 1.0
+
+
+def score_matrix(
+    expected_home_goals: float,
+    expected_away_goals: float,
+    max_goals: int = 10,
+    dixon_coles_rho: float = 0.0,
+) -> list[list[float]]:
     """P(home забил i, away забил j) для i,j в [0, max_goals]."""
     def pmf(goals: int, expected_goals: float) -> float:
         return exp(-expected_goals) * expected_goals**goals / factorial(goals)
 
     home_probs = [pmf(i, expected_home_goals) for i in range(max_goals + 1)]
     away_probs = [pmf(j, expected_away_goals) for j in range(max_goals + 1)]
-    return [[hp * ap for ap in away_probs] for hp in home_probs]
+    matrix = [
+        [
+            hp
+            * ap
+            * _dixon_coles_factor(
+                i,
+                j,
+                expected_home_goals,
+                expected_away_goals,
+                dixon_coles_rho,
+            )
+            for j, ap in enumerate(away_probs)
+        ]
+        for i, hp in enumerate(home_probs)
+    ]
+    if any(probability < 0 for row in matrix for probability in row):
+        raise ValueError("Dixon-Coles rho produces a negative score probability")
+    return matrix
 
 
 def predict_match(
@@ -47,11 +88,17 @@ def predict_match(
     expected_away_goals: float,
     total_line: float = 2.5,
     max_goals: int = 10,
+    dixon_coles_rho: float = 0.0,
 ) -> MatchProbabilities:
     if expected_home_goals < 0 or expected_away_goals < 0:
         raise ValueError("Ожидаемое число голов не может быть отрицательным")
 
-    matrix = score_matrix(expected_home_goals, expected_away_goals, max_goals)
+    matrix = score_matrix(
+        expected_home_goals,
+        expected_away_goals,
+        max_goals,
+        dixon_coles_rho,
+    )
 
     home_win = draw = away_win = 0.0
     btts_yes = 0.0

@@ -11,6 +11,7 @@
     python -m app.cli backtest-football-all [MIN_TRAIN_MATCHES]
     python -m app.cli compare-football-windows [MIN_TRAIN_MATCHES]
     python -m app.cli compare-football-elo [MIN_TRAIN_MATCHES]
+    python -m app.cli compare-football-dixon-coles [MIN_TRAIN_MATCHES]
     python -m app.cli list-betfair-competitions
     python -m app.cli sync-odds
     python -m app.cli find-ev
@@ -101,6 +102,15 @@ async def _compare_football_elo(min_train_matches: int) -> None:
         print(reports)
 
 
+async def _compare_football_dixon_coles(min_train_matches: int) -> None:
+    async with AsyncSessionLocal() as db:
+        reports = await backtest.compare_football_dixon_coles(
+            db,
+            min_train_matches=min_train_matches,
+        )
+        print(reports)
+
+
 def main() -> None:
     if len(sys.argv) < 2:
         print(__doc__)
@@ -143,6 +153,11 @@ def main() -> None:
             raise SystemExit("Использование: compare-football-elo [MIN_TRAIN_MATCHES]")
         minimum = int(sys.argv[2]) if len(sys.argv) == 3 else 100
         asyncio.run(_compare_football_elo(minimum))
+    elif command == "compare-football-dixon-coles":
+        if len(sys.argv) not in (2, 3):
+            raise SystemExit("Использование: compare-football-dixon-coles [MIN_TRAIN_MATCHES]")
+        minimum = int(sys.argv[2]) if len(sys.argv) == 3 else 100
+        asyncio.run(_compare_football_dixon_coles(minimum))
     elif command == "list-betfair-competitions":
         asyncio.run(_list_betfair_competitions())
     elif command == "sync-odds":

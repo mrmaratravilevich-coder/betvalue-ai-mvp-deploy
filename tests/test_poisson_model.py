@@ -20,6 +20,25 @@ class PoissonModelTests(unittest.TestCase):
         self.assertTrue(all(value >= 0 for row in matrix for value in row))
         self.assertGreater(sum(sum(row) for row in matrix), 0.999)
 
+    def test_zero_dixon_coles_rho_preserves_poisson(self) -> None:
+        self.assertEqual(
+            score_matrix(1.4, 0.9),
+            score_matrix(1.4, 0.9, dixon_coles_rho=0.0),
+        )
+
+    def test_negative_rho_increases_zero_zero_and_one_one(self) -> None:
+        poisson = score_matrix(1.4, 0.9)
+        corrected = score_matrix(1.4, 0.9, dixon_coles_rho=-0.1)
+
+        self.assertGreater(corrected[0][0], poisson[0][0])
+        self.assertGreater(corrected[1][1], poisson[1][1])
+        self.assertLess(corrected[0][1], poisson[0][1])
+        self.assertLess(corrected[1][0], poisson[1][0])
+
+    def test_invalid_dixon_coles_rho_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "negative score probability"):
+            score_matrix(4.0, 4.0, dixon_coles_rho=-0.5)
+
 
 if __name__ == "__main__":
     unittest.main()

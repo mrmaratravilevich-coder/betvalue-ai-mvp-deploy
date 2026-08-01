@@ -73,6 +73,18 @@ def test_zero_elo_weight_preserves_poisson_predictions() -> None:
     assert zero_weight == baseline
 
 
+def test_zero_dixon_coles_rho_preserves_poisson_predictions() -> None:
+    baseline = evaluate_chronologically(_matches(), min_train_matches=4, min_team_games=1)
+    zero_rho = evaluate_chronologically(
+        _matches(),
+        min_train_matches=4,
+        min_team_games=1,
+        dixon_coles_rho=0.0,
+    )
+
+    assert zero_rho == baseline
+
+
 def test_input_order_does_not_change_predictions() -> None:
     matches = _matches()
 

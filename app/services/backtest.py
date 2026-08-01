@@ -97,6 +97,7 @@ def evaluate_chronologically(
     elo_weight: float = 0.0,
     elo_k_factor: float = 20.0,
     elo_home_advantage: float = 65.0,
+    dixon_coles_rho: float = 0.0,
 ) -> list[BacktestPrediction]:
     """Predict every match before adding its result to the training state."""
     if history_window is not None and history_window < min_train_matches:
@@ -134,7 +135,11 @@ def evaluate_chronologically(
                 elo_multiplier = exp(elo_weight * elo_difference / 400)
                 expected_home_goals *= elo_multiplier
                 expected_away_goals /= elo_multiplier
-            probabilities = predict_match(expected_home_goals, expected_away_goals)
+            probabilities = predict_match(
+                expected_home_goals,
+                expected_away_goals,
+                dixon_coles_rho=dixon_coles_rho,
+            )
             probability_by_outcome = {
                 "home": probabilities.home_win,
                 "draw": probabilities.draw,
@@ -267,6 +272,7 @@ async def backtest_football_league(
     min_train_matches: int = 100,
     history_window: int | None = None,
     elo_weight: float = 0.0,
+    dixon_coles_rho: float = 0.0,
 ) -> BacktestReport:
     rows = (
         await db.execute(
@@ -298,6 +304,7 @@ async def backtest_football_league(
         min_train_matches=min_train_matches,
         history_window=history_window,
         elo_weight=elo_weight,
+        dixon_coles_rho=dixon_coles_rho,
     )
     return summarize_backtest(predictions, skipped_warmup=min(min_train_matches, len(historical)))
 
@@ -396,6 +403,41 @@ async def compare_football_elo_weights(
             except ValueError:
                 continue
             variants["poisson" if weight == 0 else f"elo_{weight:g}"] = report.to_dict()
+        if variants:
+            comparison[league_id] = variants
+    return comparison
+
+
+async def compare_football_dixon_coles(
+    db: AsyncSession,
+    *,
+    min_train_matches: int = 100,
+    rho_values: tuple[float, ...] = (0.0, -0.15, -0.1, -0.05, 0.05),
+) -> dict[int, dict[str, dict]]:
+    """Compare Poisson with low-score Dixon-Coles corrections by league."""
+    league_ids = (
+        await db.execute(
+            select(League.id)
+            .join(Sport)
+            .where(Sport.code == "football")
+            .order_by(League.id)
+        )
+    ).scalars().all()
+
+    comparison: dict[int, dict[str, dict]] = {}
+    for league_id in league_ids:
+        variants: dict[str, dict] = {}
+        for rho in rho_values:
+            try:
+                report = await backtest_football_league(
+                    db,
+                    league_id,
+                    min_train_matches=min_train_matches,
+                    dixon_coles_rho=rho,
+                )
+            except ValueError:
+                continue
+            variants["poisson" if rho == 0 else f"dc_{rho:g}"] = report.to_dict()
         if variants:
             comparison[league_id] = variants
     return comparison
