@@ -16,8 +16,8 @@ app/
   models/     SQLAlchemy-модели (сущности из ТЗ: матчи, коэффициенты,
               прогнозы, EV-ставки, банк, пользователи, журнал загрузки)
   schemas/    Pydantic-схемы ответов API
-  api/routes/ роуты: /auth, /matches, /ev, /predictions, /history, /bank,
-              /settings, /stats
+  api/routes/ роуты: /auth, /matches, /ev, /predictions, /model-quality,
+              /history, /bank, /settings, /stats
   services/   бизнес-логика: ev_engine.py (формулы EV/Kelly/фильтры — уже
               реализовано и проверено на примере из ТЗ), заглушки под
               загрузку матчей и коэффициентов (следующий этап)
@@ -196,4 +196,3 @@ docker compose up --build   # поднимет api + worker + beat + db + redis
 5. ~~Celery beat~~ ✅ готово.
 6. Обновление составов — нужен источник данных (`task_update_lineups` пока заглушка).
 7. Telegram-уведомления, frontend (Next.js).
-
