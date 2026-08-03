@@ -9,6 +9,7 @@ FORM: Аналитический лист матча; первичная стр�
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 
 type Match = {
   id: number;
@@ -101,7 +102,7 @@ export default function MatchPage() {
           <span className="state-code">{state === "missing" ? "404" : "503"}</span>
           <h1>{state === "missing" ? "Матч не найден" : "Данные временно недоступны"}</h1>
           <p>{state === "missing" ? "Возможно, событие уже вышло из списка ближайших матчей." : "Сервер мог перейти в режим ожидания. Повторите попытку через минуту."}</p>
-          <a className="primary" href="/#matches">Вернуться к матчам</a>
+          <Link className="primary" href="/#matches">Вернуться к матчам</Link>
         </div>
       </main>
     );
@@ -110,8 +111,8 @@ export default function MatchPage() {
   return (
     <main className="match-detail">
       <header className="topbar">
-        <a className="brand" href="/"><span>BV</span>BetValue <b>AI</b></a>
-        <a className="back-link" href="/#matches">← Все матчи</a>
+        <Link className="brand" href="/"><span>BV</span>BetValue <b>AI</b></Link>
+        <Link className="back-link" href="/#matches">← Все матчи</Link>
         <a className="bot-pill" href={TELEGRAM_URL} target="_blank" rel="noreferrer"><i /> Telegram</a>
       </header>
 
