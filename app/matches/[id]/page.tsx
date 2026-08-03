@@ -27,6 +27,16 @@ type Prediction = {
   uncertainty?: number | null;
 };
 
+type MatchArticle = {
+  match_id: number;
+  status: "ready" | "waiting";
+  title: string;
+  lead: string;
+  verdict: string;
+  confidence_label: string;
+  sections: Array<{ title: string; body: string }>;
+};
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const TELEGRAM_URL = "https://t.me/BetValueAI_bot";
 const SPORT_LABELS: Record<string, string> = {
@@ -51,6 +61,7 @@ export default function MatchPage() {
   const matchId = Number(params.id);
   const [match, setMatch] = useState<Match | null>(null);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [article, setArticle] = useState<MatchArticle | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "missing" | "error">("loading");
 
   useEffect(() => {
@@ -62,13 +73,16 @@ export default function MatchPage() {
       }),
       fetch(`${API_URL}/predictions?match_id=${matchId}&limit=50`, { signal: controller.signal })
         .then((response) => response.ok ? response.json() : []),
+      fetch(`${API_URL}/match-articles/${matchId}`, { signal: controller.signal })
+        .then((response) => response.ok ? response.json() : null),
     ])
-      .then(([matches, modelData]) => {
+      .then(([matches, modelData, articleData]) => {
         const current = Array.isArray(matches)
           ? matches.find((item: Match) => item.id === matchId)
           : null;
         setMatch(current || null);
         setPredictions(Array.isArray(modelData) ? modelData : []);
+        setArticle(articleData && typeof articleData === "object" ? articleData : null);
         setState(current ? "ready" : "missing");
       })
       .catch(() => setState("error"));
@@ -164,6 +178,32 @@ export default function MatchPage() {
             <div><span>Обновление</span><strong>При синхронизации матчей</strong></div>
           </aside>
         </div>
+
+        {article && (
+          <article className={`expert-article ${article.status === "ready" ? "is-ready" : "is-waiting"}`} aria-labelledby="expert-article-title">
+            <header className="expert-article-head">
+              <div>
+                <span className="detail-kicker">ЭКСПЕРТНЫЙ РАЗБОР · ЧТЕНИЕ 1 МИНУТА</span>
+                <h2 id="expert-article-title">{article.title}</h2>
+                <p>{article.lead}</p>
+              </div>
+              <aside className="expert-verdict">
+                <span>КОРОТКО</span>
+                <strong>{article.verdict}</strong>
+                <small>Надёжность: {article.confidence_label}</small>
+              </aside>
+            </header>
+            <div className="expert-sections">
+              {article.sections.map((section) => (
+                <section key={section.title}>
+                  <h3>{section.title}</h3>
+                  <p>{section.body}</p>
+                </section>
+              ))}
+            </div>
+            <p className="expert-note">Разбор обновляется автоматически при поступлении новых проверенных данных.</p>
+          </article>
+        )}
       </section>
 
       <section className="detail-telegram">
