@@ -11,17 +11,22 @@ async def test_start_command_sends_welcome(monkeypatch):
     sent = []
 
     async def fake_send(chat_id: int, text: str, reply_markup=None) -> dict:
-        sent.append((chat_id, text))
+        sent.append((chat_id, text, reply_markup))
         return {}
 
     monkeypatch.setattr(telegram_bot, "send_message", fake_send)
+    monkeypatch.setattr(telegram_bot.settings, "TELEGRAM_WEB_APP_URL", "https://bvai.onrender.com/telegram")
+    monkeypatch.setattr(telegram_bot.settings, "TELEGRAM_CHANNEL_URL", None)
 
     await telegram_bot.handle_update(
         {"message": {"text": "/start", "chat": {"id": 42}}}
     )
 
     assert sent[0][0] == 42
-    assert "BetValue AI подключён" in sent[0][1]
+    assert "BetValue AI готов к работе" in sent[0][1]
+    button = sent[0][2]["inline_keyboard"][0][0]
+    assert button["text"] == "Открыть матчи"
+    assert button["web_app"]["url"] == "https://bvai.onrender.com/telegram"
 
 
 @pytest.mark.asyncio
