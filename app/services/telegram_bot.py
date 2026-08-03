@@ -108,6 +108,20 @@ def _channel_url() -> str | None:
     return value
 
 
+def _web_app_url() -> str | None:
+    value = (settings.TELEGRAM_WEB_APP_URL or "").strip()
+    return value or None
+
+
+def _start_keyboard() -> dict | None:
+    rows = []
+    if web_app_url := _web_app_url():
+        rows.append([{"text": "Открыть матчи", "web_app": {"url": web_app_url}}])
+    if channel_url := _channel_url():
+        rows.append([{"text": "Канал аналитики", "url": channel_url}])
+    return {"inline_keyboard": rows} if rows else None
+
+
 def _channel_keyboard(url: str) -> dict:
     return {
         "inline_keyboard": [
@@ -128,17 +142,13 @@ async def handle_update(update: dict) -> None:
 
     try:
         if command == "/start":
-            channel_hint = (
-                "\nКанал с техническими разборами: /channel"
-                if _channel_url()
-                else ""
-            )
             await send_message(
                 chat_id,
-                "✅ BetValue AI подключён!\n\n"
-                "Команда /matches покажет ближайшие матчи по футболу и хоккею.\n"
-                "Модель показывает вероятности только при достаточной истории команд."
-                f"{channel_hint}",
+                "BetValue AI готов к работе.\n\n"
+                "Смотрите ближайшие матчи и открывайте понятный разбор прямо в Telegram. "
+                "Вероятности публикуются только тогда, когда данных достаточно.\n\n"
+                "Команда /matches покажет краткое расписание.",
+                reply_markup=_start_keyboard(),
             )
         elif command == "/help":
             await send_message(
