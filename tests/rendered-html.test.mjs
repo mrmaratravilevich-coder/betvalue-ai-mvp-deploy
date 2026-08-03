@@ -56,3 +56,17 @@ test("server-renders a dedicated match analysis route", async () => {
   assert.match(html, /Загружаем разбор матча/);
   assert.match(html, /Сверяем расписание и актуальность данных/);
 });
+
+test("server-renders the Telegram Mini App route", async () => {
+  const response = await renderPath("/telegram");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  const visibleText = html
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ");
+  assert.match(html, /Главное перед игрой/);
+  assert.match(html, /Ближайшие матчи/);
+  assert.match(html, /Собираем матчи/);
+  assert.doesNotMatch(visibleText, /гарант|железн|выигрыш|Render/i);
+});
