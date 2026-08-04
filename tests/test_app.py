@@ -15,6 +15,9 @@ class AppTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["status"], "ok")
 
+    def test_public_line_is_documented(self) -> None:
+        self.assertIn("/line", app.openapi()["paths"])
+
     def test_local_frontend_cors(self) -> None:
         response = self.client.options(
             "/sources/health",

@@ -1,10 +1,11 @@
 from fastapi import APIRouter
 
-from app.api.routes import affiliate, auth, bank, ev, history, match_articles, matches, model_quality, predictions, settings, sources, stats, telegram
+from app.api.routes import affiliate, auth, bank, ev, history, line, match_articles, matches, model_quality, predictions, settings, sources, stats, telegram
 
 api_router = APIRouter()
 api_router.include_router(auth.router)
 api_router.include_router(matches.router)
+api_router.include_router(line.router)
 api_router.include_router(match_articles.router)
 api_router.include_router(ev.router)
 api_router.include_router(predictions.router)
