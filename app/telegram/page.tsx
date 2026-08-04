@@ -228,7 +228,7 @@ export default function TelegramApp() {
         </div>
         {sessionState === "ready" && <strong>{session?.subscription_plan === "free" ? "БАЗОВЫЙ" : session?.subscription_plan.toUpperCase()}</strong>}
         {sessionState === "loading" && <div className="loader" />}
-        {sessionState === "outside" && <a href="https://t.me/BetValueAI_bot">Открыть бота</a>}
+        {sessionState === "outside" && <a className="tg-open-telegram" href={TELEGRAM_BOT_URL}>Открыть в Telegram</a>}
         {sessionState === "error" && <button type="button" onClick={authenticateTelegram}>Повторить</button>}
       </section>
 
