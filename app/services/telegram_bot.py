@@ -68,6 +68,36 @@ async def set_commands() -> None:
     )
 
 
+async def configure_profile() -> None:
+    """Keep public bot metadata aligned with the product positioning."""
+    await _call("setMyName", {"name": "BetValue AI"})
+    await _call(
+        "setMyShortDescription",
+        {"short_description": "Матчи, вероятности и уровень уверенности — прямо в Telegram."},
+    )
+    await _call(
+        "setMyDescription",
+        {
+            "description": (
+                "Спортивная аналитика без громких обещаний. "
+                "Смотрите ближайшие матчи, расчёты модели и уровень уверенности. "
+                "Данные публикуются только при достаточной истории."
+            )
+        },
+    )
+    if web_app_url := _web_app_url():
+        await _call(
+            "setChatMenuButton",
+            {
+                "menu_button": {
+                    "type": "web_app",
+                    "text": "Открыть матчи",
+                    "web_app": {"url": web_app_url},
+                }
+            },
+        )
+
+
 def _format_fixture(fixture: UpcomingFixture) -> str:
     kickoff = fixture.kickoff_at.astimezone(MOSCOW_TZ)
     return (
@@ -210,7 +240,11 @@ async def handle_update(update: dict) -> None:
 
 
 async def poll() -> None:
-    await set_commands()
+    try:
+        await set_commands()
+        await configure_profile()
+    except (httpx.HTTPError, TelegramBotError) as exc:
+        logger.warning("Telegram profile setup error: %s", exc)
     offset = 0
     logger.info("Telegram polling started")
     while True:
