@@ -437,6 +437,7 @@ footer p { text-align: center; }
 .tg-plans strong { font-size: 12px; }
 .tg-plan-action { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 .tg-plan-action button { border: 0; padding: 10px 14px; background: var(--lime); color: var(--ink); font-weight: 800; cursor: pointer; }
+.tg-plan-button { display: inline-block; padding: 10px 14px; background: var(--lime); color: var(--ink); font-size: 12px; font-weight: 800; text-decoration: none; }
 .tg-plan-action button:disabled { cursor: wait; opacity: .65; }
 .tg-plan-action em { color: var(--lime); font-size: 12px; font-style: normal; }
 .tg-plans small[role="alert"] { color: #e7a86d; font-size: 11px; }
