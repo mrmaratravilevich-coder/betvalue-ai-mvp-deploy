@@ -578,6 +578,21 @@ async def sync_upcoming_match_window(
         "errors": 0,
     }
 
+    # The official feed is the highest-value current source. Load it first so
+    # live matches and prices are available even if slower legacy providers
+    # later hit a quota or timeout.
+    if settings.MELBET_FEED_ENABLED:
+        from app.services.melbet_feed_ingestion import sync_melbet_feed
+
+        try:
+            melbet = await sync_melbet_feed(db)
+            result["melbet_feed_matches"] = melbet["events"]
+            result["melbet_feed_odds"] = melbet["odds_lines"]
+        except Exception:  # noqa: BLE001 - isolate official feed failures
+            await db.rollback()
+            result["errors"] += 1
+            logger.exception("Upcoming sync: MELBET feed failed")
+
     current_football_season = current_day.year if current_day.month >= 7 else current_day.year - 1
     football_seasons = (current_football_season - 1, current_football_season)
 
@@ -617,18 +632,6 @@ async def sync_upcoming_match_window(
             await db.rollback()
             result["errors"] += 1
             logger.exception("Upcoming sync: API-SPORTS Basketball %s failed", game_date)
-
-    if settings.MELBET_FEED_ENABLED:
-        from app.services.melbet_feed_ingestion import sync_melbet_feed
-
-        try:
-            melbet = await sync_melbet_feed(db)
-            result["melbet_feed_matches"] = melbet["events"]
-            result["melbet_feed_odds"] = melbet["odds_lines"]
-        except Exception:  # noqa: BLE001 - isolate official feed failures
-            await db.rollback()
-            result["errors"] += 1
-            logger.exception("Upcoming sync: MELBET feed failed")
 
     logger.info("Upcoming match window sync finished: %s", result)
     return result
