@@ -35,8 +35,15 @@ async def subscription_plans() -> list[SubscriptionPlanOut]:
         SubscriptionPlanOut(
             code="pro",
             name="Расширенный",
-            description="Дополнительный контекст и подборки после подключения источников.",
-            features=["Форма команд", "Очные встречи", "Расширенная статистика", "Подборки событий"],
+            description="Больше контекста перед решением: форма, очные встречи и сценарии одиночных ставок и экспрессов.",
+            features=[
+                "Форма команд",
+                "Очные встречи",
+                "Расширенная статистика",
+                "Одиночные варианты с аргументами",
+                "Экспресс-сценарии с разбивкой риска",
+                "Подборки событий",
+            ],
             available=pro_available,
             price_stars=settings.TELEGRAM_PRO_PRICE_STARS if pro_available else None,
         ),
