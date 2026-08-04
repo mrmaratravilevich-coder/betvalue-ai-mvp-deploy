@@ -41,6 +41,8 @@ test("server-renders the public BetValue AI experience", async () => {
   assert.match(html, /Матчи — в одном месте/);
   assert.match(html, /Загружаем матчи/);
   assert.match(html, /Аналитика — по делу/);
+  assert.match(html, /Линия рядом с аналитикой/);
+  assert.match(html, /Источник данных/);
   assert.match(html, /ФУТБОЛ · ХОККЕЙ · БАСКЕТБОЛ/);
   assert.match(html, /https:\/\/t\.me\/BetValueAI_bot/);
   assert.doesNotMatch(html, /football-data\.org|API-SPORTS|Документация API|PUBLIC API|АРХИТЕКТУРА MVP/i);
