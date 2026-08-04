@@ -83,6 +83,24 @@ class Settings(BaseSettings):
     TELEGRAM_CHANNEL_URL: str | None = None
     TELEGRAM_WEB_APP_URL: str | None = None
 
+    # Affiliate integration (disabled until a signed agreement is in place)
+    AFFILIATE_ENABLED: bool = False
+    AFFILIATE_PROVIDER: str = "partner"
+    AFFILIATE_BASE_URL: str | None = None
+    AFFILIATE_ALLOWED_HOSTS: str = ""
+    AFFILIATE_PROMO_CODE: str | None = None
+    AFFILIATE_PROMO_PARAM: str = "promo_code"
+    AFFILIATE_CLICK_ID_PARAM: str = "click_id"
+    AFFILIATE_SUB_PARAM_PREFIX: str = "sub"
+
+    @property
+    def affiliate_allowed_hosts(self) -> set[str]:
+        return {
+            host.strip().lower()
+            for host in self.AFFILIATE_ALLOWED_HOSTS.split(",")
+            if host.strip()
+        }
+
     # Rate limiting
     RATE_LIMIT_PER_MINUTE: int = 60
 
