@@ -31,6 +31,7 @@ type TelegramWindow = Window & {
     ready: () => void;
     expand: () => void;
     initData?: string;
+    openInvoice?: (url: string, callback?: (status: "paid" | "cancelled" | "failed" | "pending") => void) => void;
     HapticFeedback?: { impactOccurred: (style: "light") => void };
     initDataUnsafe?: { user?: { first_name?: string } };
   } };
@@ -52,6 +53,7 @@ export default function TelegramApp() {
   const [session, setSession] = useState<TelegramSession | null>(null);
   const [sessionState, setSessionState] = useState<"loading" | "ready" | "outside" | "error">("loading");
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [invoiceState, setInvoiceState] = useState<"idle" | "loading" | "pending" | "error">("idle");
 
   useEffect(() => {
     const telegram = (window as TelegramWindow).Telegram?.WebApp;
@@ -135,6 +137,32 @@ export default function TelegramApp() {
     setSport(value);
   }
 
+  const openProInvoice = useCallback(async () => {
+    const telegram = (window as TelegramWindow).Telegram?.WebApp;
+    if (!session?.access_token || !telegram?.openInvoice) return;
+    setInvoiceState("loading");
+    try {
+      const response = await fetch(`${API_URL}/telegram/invoice`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!response.ok) throw new Error("telegram-invoice");
+      const data = await response.json() as { invoice_url: string };
+      telegram.openInvoice(data.invoice_url, (status) => {
+        if (status === "paid") {
+          setInvoiceState("pending");
+          window.setTimeout(() => { void authenticateTelegram(); setInvoiceState("idle"); }, 1200);
+        } else if (status === "failed") {
+          setInvoiceState("error");
+        } else {
+          setInvoiceState("idle");
+        }
+      });
+    } catch {
+      setInvoiceState("error");
+    }
+  }, [authenticateTelegram, session]);
+
   const predictionsByMatch = useMemo(() => {
     const result = new Map<number, Prediction[]>();
     predictions.forEach((item) => result.set(item.match_id, [...(result.get(item.match_id) || []), item]));
@@ -216,7 +244,16 @@ export default function TelegramApp() {
         {plans.map((plan) => <article key={plan.code} className={plan.available ? "available" : ""}>
           <div><span>{plan.available ? "ДОСТУПЕН" : "ГОТОВИТСЯ"}</span><h3>{plan.name}</h3><p>{plan.description}</p></div>
           <ul>{plan.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
-          <strong>{plan.price_stars ? `${plan.price_stars} Stars` : plan.available ? "Без оплаты" : "Цена позже"}</strong>
+          <div className="tg-plan-action">
+            <strong>{plan.price_stars ? `${plan.price_stars} Stars` : plan.available ? "Без оплаты" : "Цена позже"}</strong>
+            {plan.code === "pro" && plan.available && sessionState === "ready" && session?.subscription_plan !== "pro" && (
+              <button type="button" onClick={openProInvoice} disabled={invoiceState === "loading" || invoiceState === "pending"}>
+                {invoiceState === "loading" ? "Открываем…" : invoiceState === "pending" ? "Проверяем…" : "Подключить"}
+              </button>
+            )}
+            {plan.code === "pro" && session?.subscription_plan === "pro" && <em>Подписка активна</em>}
+          </div>
+          {plan.code === "pro" && invoiceState === "error" && <small role="alert">Не удалось открыть оплату. Попробуйте ещё раз.</small>}
         </article>)}
       </section>}
 
