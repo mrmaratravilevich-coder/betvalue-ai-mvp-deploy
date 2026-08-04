@@ -25,6 +25,9 @@ async def test_start_command_sends_welcome(monkeypatch):
 
     assert sent[0][0] == 42
     assert "BetValue AI готов к работе" in sent[0][1]
+    assert "вероятности исходов" in sent[0][1]
+    assert "сценарии экспрессов" in sent[0][1]
+    assert "не обещаем гарантированный исход" in sent[0][1]
     button = sent[0][2]["inline_keyboard"][0][0]
     assert button["text"] == "Открыть матчи"
     assert button["web_app"]["url"] == "https://bvai.onrender.com/telegram"
@@ -152,7 +155,7 @@ async def test_app_command_opens_mini_app(monkeypatch):
 
     await telegram_bot.handle_update({"message": {"text": "/app", "chat": {"id": 42}}})
 
-    assert "не выходя из Telegram" in sent[0][1]
+    assert "экспресс-сценариев" in sent[0][1]
     assert sent[0][2]["inline_keyboard"][0][0]["web_app"]["url"] == "https://bvai.onrender.com/telegram"
     assert sent[0][2]["inline_keyboard"][1][0]["text"] == "Тариф Pro"
 
@@ -170,7 +173,8 @@ async def test_pro_command_opens_tariff(monkeypatch):
 
     await telegram_bot.handle_update({"message": {"text": "/pro", "chat": {"id": 42}}})
 
-    assert "Расширенный доступ" in sent[0][1]
+    assert "полный контекст" in sent[0][1]
+    assert "разбивкой риска" in sent[0][1]
     assert sent[0][2]["inline_keyboard"][0][0]["text"] == "Открыть тариф Pro"
     assert sent[0][2]["inline_keyboard"][0][0]["web_app"]["url"].endswith("#plans")
 
