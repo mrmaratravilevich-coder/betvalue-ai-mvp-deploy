@@ -15,6 +15,10 @@ type LineQuote = {
   selection: string;
   price: number;
   line_value?: number | null;
+  model_probability?: number | null;
+  uncertainty?: number | null;
+  value_edge?: number | null;
+  signal?: "attention" | "neutral" | "insufficient_data";
 };
 
 type LineMatch = {
@@ -394,9 +398,13 @@ export default function Home() {
                 </a>
                 <div className="line-quotes" aria-label="Коэффициенты">
                   {item.quotes.slice(0, 6).map((quote, index) => (
-                    <span key={`${quote.market}-${quote.selection}-${quote.line_value}-${index}`}>
+                    <span
+                      className={quote.signal === "attention" ? "attention" : ""}
+                      key={`${quote.market}-${quote.selection}-${quote.line_value}-${index}`}
+                    >
                       <small>{quoteLabel(quote)}</small>
                       <strong>{quote.price.toFixed(2)}</strong>
+                      {quote.signal === "attention" && <em>есть расхождение</em>}
                     </span>
                   ))}
                 </div>
@@ -404,7 +412,10 @@ export default function Home() {
             ))}
           </div>
         )}
-        <p className="line-note">Коэффициенты могут меняться. Линия используется как дополнительный рыночный сигнал, а не как обещание результата.</p>
+        <p className="line-note">
+          Метка «есть расхождение» появляется, когда оценка матча заметно отличается от текущей линии и данных достаточно для сравнения.
+          Коэффициенты могут меняться — это аналитический ориентир, а не обещание результата.
+        </p>
       </section>
 
       <section className="quality-section" aria-labelledby="quality-title">
