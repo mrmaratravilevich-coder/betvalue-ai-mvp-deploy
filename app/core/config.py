@@ -82,6 +82,7 @@ class Settings(BaseSettings):
     TELEGRAM_WEBHOOK_SECRET: str | None = None
     TELEGRAM_CHANNEL_URL: str | None = None
     TELEGRAM_WEB_APP_URL: str | None = None
+    TELEGRAM_INIT_DATA_MAX_AGE_SECONDS: int = 600
 
     # Affiliate integration (disabled until a signed agreement is in place)
     AFFILIATE_ENABLED: bool = False
