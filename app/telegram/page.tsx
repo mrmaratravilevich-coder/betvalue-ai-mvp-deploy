@@ -20,6 +20,7 @@ type Match = {
 };
 
 type Prediction = { match_id: number; selection: string; model_probability: number; uncertainty?: number | null };
+type TelegramSession = { first_name: string; username?: string | null; subscription_plan: string; access_token: string };
 type Sport = "all" | "football" | "hockey" | "basketball";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const SPORT_LABELS: Record<string, string> = { football: "Футбол", hockey: "Хоккей", basketball: "Баскетбол" };
@@ -28,6 +29,7 @@ type TelegramWindow = Window & {
   Telegram?: { WebApp?: {
     ready: () => void;
     expand: () => void;
+    initData?: string;
     HapticFeedback?: { impactOccurred: (style: "light") => void };
     initDataUnsafe?: { user?: { first_name?: string } };
   } };
@@ -46,6 +48,8 @@ export default function TelegramApp() {
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [firstName, setFirstName] = useState("");
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+  const [session, setSession] = useState<TelegramSession | null>(null);
+  const [sessionState, setSessionState] = useState<"loading" | "ready" | "outside" | "error">("loading");
 
   useEffect(() => {
     const telegram = (window as TelegramWindow).Telegram?.WebApp;
@@ -56,6 +60,35 @@ export default function TelegramApp() {
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
+
+  const authenticateTelegram = useCallback(async () => {
+    const initData = (window as TelegramWindow).Telegram?.WebApp?.initData || "";
+    if (!initData) {
+      setSessionState("outside");
+      return;
+    }
+    setSessionState("loading");
+    try {
+      const response = await fetch(`${API_URL}/telegram/session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ init_data: initData }),
+      });
+      if (!response.ok) throw new Error("telegram-session");
+      const data = await response.json() as TelegramSession;
+      window.sessionStorage.setItem("bvai_access_token", data.access_token);
+      setSession(data);
+      setFirstName(data.first_name);
+      setSessionState("ready");
+    } catch {
+      setSessionState("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void authenticateTelegram(); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [authenticateTelegram]);
 
   const loadMatches = useCallback(() => {
     const controller = new AbortController();
@@ -143,6 +176,20 @@ export default function TelegramApp() {
             </Link>
           );
         })}
+      </section>
+
+      <section className={`tg-account ${sessionState}`} aria-live="polite">
+        <div>
+          <span>ВАШ ДОСТУП</span>
+          {sessionState === "ready" && <><h2>{session?.first_name}, базовый доступ активен</h2><p>Аккаунт подтверждён Telegram. Расширенные функции пока закрыты до запуска подписки.</p></>}
+          {sessionState === "loading" && <><h2>Проверяем аккаунт</h2><p>Подтверждаем безопасный запуск приложения через Telegram.</p></>}
+          {sessionState === "outside" && <><h2>Откройте приложение из бота</h2><p>Авторизация работает только при запуске через кнопку в @BetValueAI_bot.</p></>}
+          {sessionState === "error" && <><h2>Не удалось подтвердить аккаунт</h2><p>Вернитесь в бот и откройте приложение ещё раз или повторите проверку.</p></>}
+        </div>
+        {sessionState === "ready" && <strong>{session?.subscription_plan === "free" ? "БАЗОВЫЙ" : session?.subscription_plan.toUpperCase()}</strong>}
+        {sessionState === "loading" && <div className="loader" />}
+        {sessionState === "outside" && <a href="https://t.me/BetValueAI_bot">Открыть бота</a>}
+        {sessionState === "error" && <button type="button" onClick={authenticateTelegram}>Повторить</button>}
       </section>
 
       <section className="tg-access" id="access" aria-labelledby="tg-access-title">
