@@ -236,12 +236,12 @@ export default function TelegramApp() {
         <div>
           <span>РАСШИРЕННЫЙ ДОСТУП</span>
           <h2 id="tg-access-title">Больше контекста по матчу</h2>
-          <p>Форма команд, очные встречи, расширенная статистика и подборки событий появятся после проверки источников и запуска подписки.</p>
+          <p>{plans.some((plan) => plan.code === "pro" && plan.available) ? "Форма команд, очные встречи, расширенная статистика и подборки событий доступны в тарифе Pro." : "Форма команд, очные встречи, расширенная статистика и подборки событий появятся после проверки источников и запуска подписки."}</p>
         </div>
-        <button type="button" disabled>Скоро</button>
+        {plans.some((plan) => plan.code === "pro" && plan.available) ? <a className="tg-access-cta" href="#plans">Перейти к тарифу</a> : <button type="button" disabled>Скоро</button>}
       </section>
 
-      {plans.length > 0 && <section className="tg-plans" aria-label="Тарифы">
+      {plans.length > 0 && <section className="tg-plans" id="plans" aria-label="Тарифы">
         {plans.map((plan) => <article key={plan.code} className={plan.available ? "available" : ""}>
           <div><span>{plan.available ? "ДОСТУПЕН" : "ГОТОВИТСЯ"}</span><h3>{plan.name}</h3><p>{plan.description}</p></div>
           <ul>{plan.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
