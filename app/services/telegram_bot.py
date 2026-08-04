@@ -85,6 +85,7 @@ async def set_commands() -> None:
                 {"command": "start", "description": "Запустить BetValue AI"},
                 {"command": "matches", "description": "Показать ближайшие матчи"},
                 {"command": "app", "description": "Открыть приложение"},
+                {"command": "pro", "description": "Открыть тариф Pro"},
                 {"command": "channel", "description": "Открыть канал аналитики"},
                 {"command": "help", "description": "Показать справку"},
             ]
@@ -172,6 +173,7 @@ def _start_keyboard() -> dict | None:
     rows = []
     if web_app_url := _web_app_url():
         rows.append([{"text": "Открыть матчи", "web_app": {"url": web_app_url}}])
+        rows.append([{"text": "Тариф Pro", "web_app": {"url": f"{web_app_url}#plans"}}])
     if channel_url := _channel_url():
         rows.append([{"text": "Канал аналитики", "url": channel_url}])
     return {"inline_keyboard": rows} if rows else None
@@ -181,7 +183,18 @@ def _app_keyboard() -> dict | None:
     if web_app_url := _web_app_url():
         return {
             "inline_keyboard": [
-                [{"text": "Открыть BetValue AI", "web_app": {"url": web_app_url}}]
+                [{"text": "Открыть BetValue AI", "web_app": {"url": web_app_url}}],
+                [{"text": "Тариф Pro", "web_app": {"url": f"{web_app_url}#plans"}}],
+            ]
+        }
+    return None
+
+
+def _pro_keyboard() -> dict | None:
+    if web_app_url := _web_app_url():
+        return {
+            "inline_keyboard": [
+                [{"text": "Открыть тариф Pro", "web_app": {"url": f"{web_app_url}#plans"}}],
             ]
         }
     return None
@@ -237,6 +250,12 @@ async def handle_update(update: dict) -> None:
                 )
             else:
                 await send_message(chat_id, "Приложение временно недоступно. Используйте /matches.")
+        elif command == "/pro":
+            await send_message(
+                chat_id,
+                "Расширенный доступ BetValue AI: форма команд, очные встречи, расширенная статистика и подборки событий. Откройте тариф в приложении.",
+                reply_markup=_pro_keyboard(),
+            )
         elif command == "/channel":
             channel_url = _channel_url()
             if channel_url:
