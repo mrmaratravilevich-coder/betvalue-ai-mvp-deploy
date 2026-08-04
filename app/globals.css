@@ -435,6 +435,11 @@ footer p { text-align: center; }
 .tg-plans p { margin: 0; }
 .tg-plans ul { margin: 0; padding-left: 18px; }
 .tg-plans strong { font-size: 12px; }
+.tg-plan-action { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.tg-plan-action button { border: 0; padding: 10px 14px; background: var(--lime); color: var(--ink); font-weight: 800; cursor: pointer; }
+.tg-plan-action button:disabled { cursor: wait; opacity: .65; }
+.tg-plan-action em { color: var(--lime); font-size: 12px; font-style: normal; }
+.tg-plans small[role="alert"] { color: #e7a86d; font-size: 11px; }
 .tg-nav { position: fixed; z-index: 10; left: 50%; bottom: var(--tg-safe-bottom); width: min(calc(100% - 24px), 696px); transform: translateX(-50%); display: grid; grid-template-columns: repeat(3, 1fr); background: #171b1d; box-shadow: 0 14px 38px rgba(0,0,0,.55); }
 .tg-nav a { min-height: 62px; display: grid; place-content: center; gap: 5px; color: #909790; text-align: center; font-size: 10px; }
 .tg-nav a span { color: #b6bbb6; font-size: 17px; line-height: 1; }
