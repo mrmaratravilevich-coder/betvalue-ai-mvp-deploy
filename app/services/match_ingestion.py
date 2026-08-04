@@ -14,6 +14,7 @@ from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.leagues import SUPPORTED_LEAGUES, LeagueConfig
 from app.models.enums import MatchStatus
 from app.models.match import Match, MatchTeamStat
@@ -534,12 +535,19 @@ async def run_daily_match_update(db: AsyncSession) -> dict[str, int]:
     hockey_count = await sync_api_hockey_date(db)
     basketball_count = await sync_api_basketball_date(db)
     sb_count = await sync_all_statsbomb_leagues(db)
-    return {
+    result = {
         "football_data_matches": fd_count,
         "api_hockey_matches": hockey_count,
         "api_basketball_matches": basketball_count,
         "statsbomb_matches": sb_count,
     }
+    if settings.MELBET_FEED_ENABLED:
+        from app.services.melbet_feed_ingestion import sync_melbet_feed
+
+        melbet = await sync_melbet_feed(db)
+        result["melbet_feed_matches"] = melbet["events"]
+        result["melbet_feed_odds"] = melbet["odds_lines"]
+    return result
 
 
 async def sync_upcoming_match_window(
@@ -565,6 +573,8 @@ async def sync_upcoming_match_window(
         "football_data_matches": 0,
         "api_hockey_matches": 0,
         "api_basketball_matches": 0,
+        "melbet_feed_matches": 0,
+        "melbet_feed_odds": 0,
         "errors": 0,
     }
 
@@ -607,6 +617,18 @@ async def sync_upcoming_match_window(
             await db.rollback()
             result["errors"] += 1
             logger.exception("Upcoming sync: API-SPORTS Basketball %s failed", game_date)
+
+    if settings.MELBET_FEED_ENABLED:
+        from app.services.melbet_feed_ingestion import sync_melbet_feed
+
+        try:
+            melbet = await sync_melbet_feed(db)
+            result["melbet_feed_matches"] = melbet["events"]
+            result["melbet_feed_odds"] = melbet["odds_lines"]
+        except Exception:  # noqa: BLE001 - isolate official feed failures
+            await db.rollback()
+            result["errors"] += 1
+            logger.exception("Upcoming sync: MELBET feed failed")
 
     logger.info("Upcoming match window sync finished: %s", result)
     return result

@@ -24,3 +24,4 @@ lightgbm==4.5.0
 # Источники открытых данных
 statsbombpy==1.14.0
 httpx==0.27.2
+msgpack==1.1.1

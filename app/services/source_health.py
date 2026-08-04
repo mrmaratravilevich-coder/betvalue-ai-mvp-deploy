@@ -1,8 +1,11 @@
 """Read-only health checks for the MVP sports-data providers."""
 
 import asyncio
+from datetime import datetime, timedelta, timezone
 
+from app.core.config import settings
 from app.services.sources import api_basketball, api_hockey, football_data
+from app.services.sources.melbet_feed import MelbetFeedClient
 
 
 async def check_mvp_sources() -> dict:
@@ -28,4 +31,17 @@ async def check_mvp_sources() -> dict:
         if isinstance(basketball_result, Exception)
         else {"ok": True, "provider": "API-SPORTS"}
     )
-    return {"football": football, "hockey": hockey, "basketball": basketball}
+    melbet: dict = {"ok": False, "configured": False}
+    if settings.MELBET_FEED_ENABLED:
+        try:
+            now = datetime.now(timezone.utc)
+            sports = await MelbetFeedClient().fetch_sports(now, now + timedelta(days=1))
+            melbet = {"ok": True, "configured": True, "sports": len(sports)}
+        except Exception as exc:  # noqa: BLE001 - health endpoint must stay available
+            melbet = {"ok": False, "configured": True, "error": type(exc).__name__}
+    return {
+        "football": football,
+        "hockey": hockey,
+        "basketball": basketball,
+        "melbet_feed": melbet,
+    }

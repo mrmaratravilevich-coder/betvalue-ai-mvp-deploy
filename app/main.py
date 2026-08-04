@@ -55,7 +55,15 @@ async def lifespan(_: FastAPI):
     if (
         settings.ENV == "production"
         and settings.AUTO_SYNC_MATCHES
-        and (settings.FOOTBALL_DATA_API_KEY or settings.API_SPORTS_KEY)
+        and (
+            settings.FOOTBALL_DATA_API_KEY
+            or settings.API_SPORTS_KEY
+            or (
+                settings.MELBET_FEED_ENABLED
+                and settings.MELBET_FEED_CLIENT_ID
+                and settings.MELBET_FEED_CLIENT_SECRET
+            )
+        )
     ):
         sync_task = asyncio.create_task(automatic_match_sync(), name="automatic-match-sync")
     await configure_telegram()

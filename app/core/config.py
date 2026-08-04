@@ -71,6 +71,32 @@ class Settings(BaseSettings):
     BETFAIR_KEEPALIVE_URL: str = "https://identitysso.betfair.com/api/keepAlive"
     BETFAIR_API_URL: str = "https://api.betfair.com/exchange/betting/json-rpc/v1"
 
+    # Official MELBET/Digitain Affiliate Feed. Credentials are environment-only.
+    MELBET_FEED_ENABLED: bool = False
+    MELBET_FEED_BASE_URL: str = "https://affiliatefeedapi.tst-digi.com"
+    MELBET_FEED_CLIENT_ID: str | None = None
+    MELBET_FEED_CLIENT_SECRET: str | None = None
+    MELBET_FEED_TOURNAMENT_IDS: str = ""
+    MELBET_FEED_STAKE_TYPE_IDS: str = "1,2,3,26,37"
+    MELBET_FEED_LANGUAGE_IDS: str = "1,2"
+    MELBET_FEED_PREMATCH_DAYS: int = 14
+
+    @staticmethod
+    def _parse_int_list(value: str) -> list[int]:
+        return [int(item.strip()) for item in value.split(",") if item.strip()]
+
+    @property
+    def melbet_feed_tournament_ids(self) -> list[int]:
+        return self._parse_int_list(self.MELBET_FEED_TOURNAMENT_IDS)
+
+    @property
+    def melbet_feed_stake_type_ids(self) -> list[int]:
+        return self._parse_int_list(self.MELBET_FEED_STAKE_TYPE_IDS)
+
+    @property
+    def melbet_feed_language_ids(self) -> list[int]:
+        return self._parse_int_list(self.MELBET_FEED_LANGUAGE_IDS)
+
     # Бизнес-правила (значения по умолчанию, переопределяются в UserSettings)
     MIN_EV_THRESHOLD: float = 0.05
     MAX_ODDS: float = 6.0
