@@ -7,7 +7,8 @@ FORM: Мобильная оперативная лента, первый вар�
 */
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 
 type Match = {
   id: number;
@@ -23,6 +24,15 @@ type Sport = "all" | "football" | "hockey" | "basketball";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const SPORT_LABELS: Record<string, string> = { football: "Футбол", hockey: "Хоккей", basketball: "Баскетбол" };
 
+type TelegramWindow = Window & {
+  Telegram?: { WebApp?: {
+    ready: () => void;
+    expand: () => void;
+    HapticFeedback?: { impactOccurred: (style: "light") => void };
+    initDataUnsafe?: { user?: { first_name?: string } };
+  } };
+};
+
 function kickoff(value: string) {
   return new Intl.DateTimeFormat("ru-RU", {
     weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Moscow",
@@ -34,9 +44,22 @@ export default function TelegramApp() {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [sport, setSport] = useState<Sport>("all");
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  const [firstName, setFirstName] = useState("");
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
 
   useEffect(() => {
+    const telegram = (window as TelegramWindow).Telegram?.WebApp;
+    telegram?.ready();
+    telegram?.expand();
+    const timer = window.setTimeout(() => {
+      setFirstName(telegram?.initDataUnsafe?.user?.first_name?.trim() || "");
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const loadMatches = useCallback(() => {
     const controller = new AbortController();
+    setState("loading");
     Promise.all([
       fetch(`${API_URL}/matches?limit=100`, { signal: controller.signal }).then((response) => {
         if (!response.ok) throw new Error("matches");
@@ -48,10 +71,25 @@ export default function TelegramApp() {
     ]).then(([matchData, predictionData]) => {
       setMatches(Array.isArray(matchData) ? matchData : []);
       setPredictions(Array.isArray(predictionData) ? predictionData : []);
+      setUpdatedAt(new Date());
       setState("ready");
     }).catch(() => setState("error"));
     return () => controller.abort();
   }, []);
+
+  useEffect(() => {
+    let cancel: (() => void) | undefined;
+    const timer = window.setTimeout(() => { cancel = loadMatches(); }, 0);
+    return () => {
+      window.clearTimeout(timer);
+      cancel?.();
+    };
+  }, [loadMatches]);
+
+  function selectSport(value: Sport) {
+    (window as TelegramWindow).Telegram?.WebApp?.HapticFeedback?.impactOccurred("light");
+    setSport(value);
+  }
 
   const predictionsByMatch = useMemo(() => {
     const result = new Map<number, Prediction[]>();
@@ -63,26 +101,29 @@ export default function TelegramApp() {
   return (
     <main className="tg-app">
       <header className="tg-head">
-        <a className="brand" href="/" aria-label="BetValue AI"><span>BV</span>BetValue <b>AI</b></a>
+        <Link className="brand" href="/" aria-label="BetValue AI"><span>BV</span>BetValue <b>AI</b></Link>
         <span className="tg-plan">BETA</span>
       </header>
 
       <section className="tg-intro">
         <p>АНАЛИТИКА МАТЧЕЙ</p>
-        <h1>Главное перед игрой</h1>
+        <h1>{firstName ? `${firstName}, главное перед игрой` : "Главное перед игрой"}</h1>
         <span>Расписание, вероятности и уровень уверенности — коротко и без громких обещаний.</span>
       </section>
 
       <div className="tg-tabs" role="group" aria-label="Вид спорта">
         {(["all", "football", "hockey", "basketball"] as Sport[]).map((value) => (
-          <button key={value} type="button" aria-pressed={sport === value} className={sport === value ? "active" : ""} onClick={() => setSport(value)}>
+          <button key={value} type="button" aria-pressed={sport === value} className={sport === value ? "active" : ""} onClick={() => selectSport(value)}>
             {value === "all" ? "Все" : SPORT_LABELS[value]}
           </button>
         ))}
       </div>
 
       <section className="tg-feed" aria-live="polite">
-        <div className="tg-feed-head"><h2>Ближайшие матчи</h2><span>{state === "ready" ? filtered.length : "—"}</span></div>
+        <div className="tg-feed-head">
+          <div><h2>Ближайшие матчи</h2>{updatedAt && <small>Обновлено {updatedAt.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}</small>}</div>
+          <button type="button" onClick={loadMatches} disabled={state === "loading"} aria-label="Обновить матчи">↻</button>
+        </div>
         {state === "loading" && <div className="tg-message" role="status"><div className="loader" /><p><b>Собираем матчи</b><br />Проверяем расписание и расчёты.</p></div>}
         {state === "error" && <div className="tg-message" role="alert"><p><b>Данные временно недоступны</b><br />Попробуйте обновить экран через минуту.</p><button onClick={() => window.location.reload()}>Обновить</button></div>}
         {state === "ready" && filtered.length === 0 && <div className="tg-message"><p><b>Матчей пока нет</b><br />Выберите другой вид спорта или загляните позже.</p></div>}
@@ -92,22 +133,31 @@ export default function TelegramApp() {
           const ready = ["home", "draw", "away"].every((selection) => outcomes.has(selection))
             && (outcomes.get("home")?.uncertainty ?? 1) <= 0.5;
           return (
-            <a className="tg-match" href={`/matches/${match.id}`} key={match.id}>
+            <Link className="tg-match" href={`/matches/${match.id}`} key={match.id}>
               <div className="tg-match-meta"><span>{SPORT_LABELS[match.league.sport.code] || match.league.sport.name} · {match.league.name}</span><time>{kickoff(match.kickoff_at)} МСК</time></div>
               <div className="tg-teams"><strong>{match.home_team.name}</strong><i>—</i><strong>{match.away_team.name}</strong></div>
               <div className={`tg-analysis ${ready ? "ready" : ""}`}>
                 <b>{ready ? "Разбор готов" : "Собираем данные"}</b>
                 {ready ? <span>П1 {Math.round((outcomes.get("home")?.model_probability || 0) * 100)}% · Х {Math.round((outcomes.get("draw")?.model_probability || 0) * 100)}% · П2 {Math.round((outcomes.get("away")?.model_probability || 0) * 100)}%</span> : <span>Откроем расчёт, когда данных будет достаточно</span>}
               </div>
-            </a>
+            </Link>
           );
         })}
       </section>
 
+      <section className="tg-access" id="access" aria-labelledby="tg-access-title">
+        <div>
+          <span>РАСШИРЕННЫЙ ДОСТУП</span>
+          <h2 id="tg-access-title">Больше контекста по матчу</h2>
+          <p>Форма команд, очные встречи, расширенная статистика и подборки событий появятся после проверки источников и запуска подписки.</p>
+        </div>
+        <button type="button" disabled>Скоро</button>
+      </section>
+
       <nav className="tg-nav" aria-label="Навигация приложения">
-        <a className="active" href="/telegram"><span>●</span>Матчи</a>
-        <a href="/#quality-title"><span>◒</span>Результаты</a>
-        <a href="/"><span>↗</span>Сайт</a>
+        <Link className="active" href="/telegram"><span>●</span>Матчи</Link>
+        <a href="#access"><span>＋</span>Расширить</a>
+        <Link href="/"><span>↗</span>Сайт</Link>
       </nav>
       <p className="tg-disclaimer">Аналитический сервис. Не принимает и не размещает ставки.</p>
     </main>
