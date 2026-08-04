@@ -60,6 +60,7 @@ async def set_commands() -> None:
             "commands": [
                 {"command": "start", "description": "Запустить BetValue AI"},
                 {"command": "matches", "description": "Показать ближайшие матчи"},
+                {"command": "app", "description": "Открыть приложение"},
                 {"command": "channel", "description": "Открыть канал аналитики"},
                 {"command": "help", "description": "Показать справку"},
             ]
@@ -122,6 +123,16 @@ def _start_keyboard() -> dict | None:
     return {"inline_keyboard": rows} if rows else None
 
 
+def _app_keyboard() -> dict | None:
+    if web_app_url := _web_app_url():
+        return {
+            "inline_keyboard": [
+                [{"text": "Открыть BetValue AI", "web_app": {"url": web_app_url}}]
+            ]
+        }
+    return None
+
+
 def _channel_keyboard(url: str) -> dict:
     return {
         "inline_keyboard": [
@@ -142,12 +153,14 @@ async def handle_update(update: dict) -> None:
 
     try:
         if command == "/start":
+            first_name = str((message.get("from") or {}).get("first_name") or "").strip()
+            greeting = f"{first_name}, BetValue AI готов к работе." if first_name else "BetValue AI готов к работе."
             await send_message(
                 chat_id,
-                "BetValue AI готов к работе.\n\n"
-                "Смотрите ближайшие матчи и открывайте понятный разбор прямо в Telegram. "
-                "Вероятности публикуются только тогда, когда данных достаточно.\n\n"
-                "Команда /matches покажет краткое расписание.",
+                f"{greeting}\n\n"
+                "Матчи, расчёты и уровень уверенности — в одном приложении. "
+                "Аналитика появляется только при достаточном объёме данных.\n\n"
+                "Откройте приложение или отправьте /matches для краткого расписания.",
                 reply_markup=_start_keyboard(),
             )
         elif command == "/help":
@@ -156,9 +169,20 @@ async def handle_update(update: dict) -> None:
                 "Команды BetValue AI:\n"
                 "/start — подключить бота\n"
                 "/matches — показать ближайшие матчи\n"
+                "/app — открыть приложение\n"
                 "/channel — открыть канал аналитики\n"
                 "/help — показать справку",
             )
+        elif command == "/app":
+            keyboard = _app_keyboard()
+            if keyboard:
+                await send_message(
+                    chat_id,
+                    "Откройте ленту матчей и полный разбор, не выходя из Telegram.",
+                    reply_markup=keyboard,
+                )
+            else:
+                await send_message(chat_id, "Приложение временно недоступно. Используйте /matches.")
         elif command == "/channel":
             channel_url = _channel_url()
             if channel_url:
@@ -175,6 +199,12 @@ async def handle_update(update: dict) -> None:
         elif command == "/matches":
             matches = await get_upcoming_matches()
             await send_message(chat_id, _format_matches(matches))
+        elif command.startswith("/"):
+            await send_message(
+                chat_id,
+                "Не нашёл такую команду. Отправьте /help или откройте приложение.",
+                reply_markup=_app_keyboard(),
+            )
     except (httpx.HTTPError, TelegramBotError) as exc:
         logger.warning("Telegram update error: %s", exc)
 
