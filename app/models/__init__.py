@@ -7,6 +7,7 @@ from app.models.match import Match, MatchTeamStat
 from app.models.odds import Market, OddsLine, OddsSource
 from app.models.prediction import EVBet, Prediction
 from app.models.team import League, Sport, Team
+from app.models.telegram_account import TelegramAccount
 from app.models.user import BankTransaction, User, UserSettings
 
 __all__ = [
@@ -21,6 +22,7 @@ __all__ = [
     "League",
     "Sport",
     "Team",
+    "TelegramAccount",
     "BankTransaction",
     "User",
     "UserSettings",
