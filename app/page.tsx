@@ -6,6 +6,27 @@ type SourceState = {
   football?: { ok: boolean; matches?: number };
   hockey?: { ok: boolean };
   basketball?: { ok: boolean };
+  melbet_feed?: { ok: boolean; configured?: boolean; sports?: number; error?: string | null };
+};
+
+type LineQuote = {
+  market: string;
+  market_name: string;
+  selection: string;
+  price: number;
+  line_value?: number | null;
+};
+
+type LineMatch = {
+  match_id: number;
+  sport: string;
+  league: string;
+  home_team: string;
+  away_team: string;
+  kickoff_at: string;
+  status: string;
+  updated_at: string;
+  quotes: LineQuote[];
 };
 
 type Match = {
@@ -62,6 +83,21 @@ const SPORT_LABELS: Record<string, string> = {
   hockey: "Хоккей",
   basketball: "Баскетбол",
 };
+
+const SELECTION_LABELS: Record<string, string> = {
+  home: "П1",
+  draw: "X",
+  away: "П2",
+  over: "Б",
+  under: "М",
+  yes: "Да",
+  no: "Нет",
+};
+
+function quoteLabel(quote: LineQuote) {
+  const base = SELECTION_LABELS[quote.selection] || quote.selection;
+  return quote.line_value == null ? base : `${base} ${quote.line_value}`;
+}
 
 function formatKickoff(value: string) {
   const date = new Date(value);
@@ -125,6 +161,8 @@ export default function Home() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [quality, setQuality] = useState<ModelQuality | null>(null);
+  const [line, setLine] = useState<LineMatch[]>([]);
+  const [lineLoading, setLineLoading] = useState(true);
   const [qualityDays, setQualityDays] = useState(30);
   const [sportFilter, setSportFilter] = useState<SportFilter>("all");
   const [leagueFilter, setLeagueFilter] = useState("all");
@@ -156,16 +194,22 @@ export default function Home() {
       fetch(`${API_URL}/model-quality`, { signal: controller.signal })
         .then((response) => response.ok ? response.json() : null)
         .catch(() => null),
+      fetch(`${API_URL}/line?limit=12`, { signal: controller.signal })
+        .then((response) => response.ok ? response.json() : [])
+        .catch(() => []),
     ])
-      .then(([, sourceData, matchData, predictionData, qualityData]) => {
+      .then(([, sourceData, matchData, predictionData, qualityData, lineData]) => {
         setSources(sourceData);
         setMatches(Array.isArray(matchData) ? matchData : []);
         setPredictions(Array.isArray(predictionData) ? predictionData : []);
         setQuality(qualityData && Array.isArray(qualityData.windows) ? qualityData : null);
+        setLine(Array.isArray(lineData) ? lineData : []);
+        setLineLoading(false);
         setState("ready");
       })
       .catch(() => setState("error"))
       .finally(() => {
+        setLineLoading(false);
         window.clearTimeout(coldTimer);
         window.clearTimeout(timeout);
       });
@@ -230,6 +274,7 @@ export default function Home() {
         </a>
         <nav aria-label="Основная навигация">
           <a href="#matches">Матчи</a>
+          <a href="#line">Линия</a>
           <a href="#about">Об аналитике</a>
         </nav>
         <a className="bot-pill" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
@@ -301,6 +346,65 @@ export default function Home() {
           <strong>BETA</strong>
           <span>открытое тестирование</span>
         </article>
+      </section>
+
+      <section className="line-section" id="line" aria-labelledby="line-title">
+        <div className="line-heading">
+          <div>
+            <span>ОФИЦИАЛЬНЫЕ КОЭФФИЦИЕНТЫ</span>
+            <h2 id="line-title">Линия рядом с аналитикой</h2>
+          </div>
+          <div className={`line-source ${sources.melbet_feed?.ok ? "online" : ""}`}>
+            <i aria-hidden="true" />
+            <span>Источник данных</span>
+            <strong>{sources.melbet_feed?.ok ? "MELBET · подключён" : "Проверяем подключение"}</strong>
+          </div>
+        </div>
+
+        {lineLoading && (
+          <div className="line-empty" role="status">
+            <strong>Обновляем линию</strong>
+            <span>Получаем доступные события и коэффициенты.</span>
+          </div>
+        )}
+
+        {!lineLoading && line.length === 0 && (
+          <div className="line-empty">
+            <strong>{sources.melbet_feed?.ok ? "Источник подключён" : "Линия временно недоступна"}</strong>
+            <span>
+              {sources.melbet_feed?.ok
+                ? "В тестовой линии сейчас нет активных событий. Новые матчи появятся здесь автоматически."
+                : "Повторно проверим подключение при следующем обновлении страницы."}
+            </span>
+          </div>
+        )}
+
+        {line.length > 0 && (
+          <div className="line-list">
+            {line.map((item) => (
+              <article className="line-event" key={item.match_id}>
+                <div className="line-event-meta">
+                  <span>{item.status === "live" ? "LIVE" : formatKickoff(item.kickoff_at)}</span>
+                  <small>{item.sport} · {item.league}</small>
+                </div>
+                <a href={`/matches/${item.match_id}`} className="line-teams">
+                  <strong>{item.home_team}</strong>
+                  <i>—</i>
+                  <strong>{item.away_team}</strong>
+                </a>
+                <div className="line-quotes" aria-label="Коэффициенты">
+                  {item.quotes.slice(0, 6).map((quote, index) => (
+                    <span key={`${quote.market}-${quote.selection}-${quote.line_value}-${index}`}>
+                      <small>{quoteLabel(quote)}</small>
+                      <strong>{quote.price.toFixed(2)}</strong>
+                    </span>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+        <p className="line-note">Коэффициенты могут меняться. Линия используется как дополнительный рыночный сигнал, а не как обещание результата.</p>
       </section>
 
       <section className="quality-section" aria-labelledby="quality-title">
