@@ -24,6 +24,7 @@ type TelegramSession = { first_name: string; username?: string | null; subscript
 type SubscriptionPlan = { code: string; name: string; description: string; features: string[]; available: boolean; price_stars?: number | null };
 type Sport = "all" | "football" | "hockey" | "basketball";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const TELEGRAM_BOT_URL = "https://t.me/BetValueAI_bot";
 const SPORT_LABELS: Record<string, string> = { football: "Футбол", hockey: "Хоккей", basketball: "Баскетбол" };
 
 type TelegramWindow = Window & {
@@ -246,6 +247,9 @@ export default function TelegramApp() {
           <ul>{plan.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
           <div className="tg-plan-action">
             <strong>{plan.price_stars ? `${plan.price_stars} Stars` : plan.available ? "Без оплаты" : "Цена позже"}</strong>
+            {plan.code === "pro" && plan.available && sessionState === "outside" && (
+              <a className="tg-plan-button" href={TELEGRAM_BOT_URL}>Открыть в Telegram</a>
+            )}
             {plan.code === "pro" && plan.available && sessionState === "ready" && session?.subscription_plan !== "pro" && (
               <button type="button" onClick={openProInvoice} disabled={invoiceState === "loading" || invoiceState === "pending"}>
                 {invoiceState === "loading" ? "Открываем…" : invoiceState === "pending" ? "Проверяем…" : "Подключить"}
