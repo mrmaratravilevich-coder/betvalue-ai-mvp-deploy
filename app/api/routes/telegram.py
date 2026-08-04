@@ -11,11 +11,31 @@ from app.core.security import create_access_token
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.telegram_account import TelegramAccount
-from app.schemas.telegram import TelegramSessionIn, TelegramSessionOut
+from app.schemas.telegram import SubscriptionPlanOut, TelegramSessionIn, TelegramSessionOut
 from app.services.telegram_auth import TelegramAuthError, validate_init_data
 from app.services.telegram_bot import handle_update
 
 router = APIRouter(prefix="/telegram", tags=["telegram"])
+
+
+@router.get("/plans", response_model=list[SubscriptionPlanOut])
+async def subscription_plans() -> list[SubscriptionPlanOut]:
+    return [
+        SubscriptionPlanOut(
+            code="free",
+            name="Базовый",
+            description="Ближайшие матчи и доступные расчёты модели.",
+            features=["Расписание матчей", "Вероятности исходов", "Уровень уверенности"],
+            available=True,
+        ),
+        SubscriptionPlanOut(
+            code="pro",
+            name="Расширенный",
+            description="Дополнительный контекст и подборки после подключения источников.",
+            features=["Форма команд", "Очные встречи", "Расширенная статистика", "Подборки событий"],
+            available=False,
+        ),
+    ]
 
 
 @router.post("/session", response_model=TelegramSessionOut)
