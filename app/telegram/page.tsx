@@ -44,6 +44,12 @@ function kickoff(value: string) {
   }).format(new Date(value));
 }
 
+function hasReadyPredictionSet(items: Prediction[]) {
+  const outcomes = new Map(items.map((item) => [item.selection, item]));
+  return ["home", "draw", "away"].every((selection) => outcomes.has(selection))
+    && (outcomes.get("home")?.uncertainty ?? 1) <= 0.5;
+}
+
 export default function TelegramApp() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
@@ -169,7 +175,15 @@ export default function TelegramApp() {
     predictions.forEach((item) => result.set(item.match_id, [...(result.get(item.match_id) || []), item]));
     return result;
   }, [predictions]);
-  const filtered = matches.filter((match) => sport === "all" || match.league.sport.code === sport).slice(0, 20);
+  const filtered = useMemo(() => matches
+    .filter((match) => sport === "all" || match.league.sport.code === sport)
+    .sort((left, right) => {
+      const leftReady = hasReadyPredictionSet(predictionsByMatch.get(left.id) || []);
+      const rightReady = hasReadyPredictionSet(predictionsByMatch.get(right.id) || []);
+      if (leftReady !== rightReady) return leftReady ? -1 : 1;
+      return new Date(left.kickoff_at).getTime() - new Date(right.kickoff_at).getTime();
+    })
+    .slice(0, 20), [matches, predictionsByMatch, sport]);
 
   return (
     <main className="tg-app">
@@ -203,8 +217,7 @@ export default function TelegramApp() {
         {state === "ready" && filtered.map((match) => {
           const matchPredictions = predictionsByMatch.get(match.id) || [];
           const outcomes = new Map(matchPredictions.map((item) => [item.selection, item]));
-          const ready = ["home", "draw", "away"].every((selection) => outcomes.has(selection))
-            && (outcomes.get("home")?.uncertainty ?? 1) <= 0.5;
+          const ready = hasReadyPredictionSet(matchPredictions);
           return (
             <Link className="tg-match" href={`/matches/${match.id}`} key={match.id}>
               <div className="tg-match-meta"><span>{SPORT_LABELS[match.league.sport.code] || match.league.sport.name} · {match.league.name}</span><time>{kickoff(match.kickoff_at)} МСК</time></div>
