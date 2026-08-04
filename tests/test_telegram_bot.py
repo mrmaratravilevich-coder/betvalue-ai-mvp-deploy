@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 import pytest
 
 from app.services import telegram_bot
+from app import main as app_main
 from app.services.upcoming_matches import UpcomingFixture, UpcomingMatches
 
 
@@ -167,3 +168,66 @@ async def test_unknown_command_shows_recovery(monkeypatch):
     await telegram_bot.handle_update({"message": {"text": "/unknown", "chat": {"id": 42}}})
 
     assert "Не нашёл такую команду" in sent[0][1]
+
+
+@pytest.mark.asyncio
+async def test_configure_profile_sets_copy_and_menu_button(monkeypatch):
+    calls = []
+
+    async def fake_call(method: str, payload=None) -> dict:
+        calls.append((method, payload))
+        return {}
+
+    monkeypatch.setattr(telegram_bot, "_call", fake_call)
+    monkeypatch.setattr(
+        telegram_bot.settings,
+        "TELEGRAM_WEB_APP_URL",
+        "https://bvai.onrender.com/telegram",
+    )
+
+    await telegram_bot.configure_profile()
+
+    assert [method for method, _ in calls] == [
+        "setMyName",
+        "setMyShortDescription",
+        "setMyDescription",
+        "setChatMenuButton",
+    ]
+    menu_button = calls[-1][1]["menu_button"]
+    assert menu_button["text"] == "Открыть матчи"
+    assert menu_button["web_app"]["url"] == "https://bvai.onrender.com/telegram"
+
+
+@pytest.mark.asyncio
+async def test_configure_profile_skips_menu_without_web_app(monkeypatch):
+    calls = []
+
+    async def fake_call(method: str, payload=None) -> dict:
+        calls.append((method, payload))
+        return {}
+
+    monkeypatch.setattr(telegram_bot, "_call", fake_call)
+    monkeypatch.setattr(telegram_bot.settings, "TELEGRAM_WEB_APP_URL", None)
+
+    await telegram_bot.configure_profile()
+
+    assert "setChatMenuButton" not in [method for method, _ in calls]
+
+
+@pytest.mark.asyncio
+async def test_api_startup_configures_telegram_profile(monkeypatch):
+    called = []
+
+    async def fake_commands() -> None:
+        called.append("commands")
+
+    async def fake_profile() -> None:
+        called.append("profile")
+
+    monkeypatch.setattr(app_main.settings, "TELEGRAM_BOT_TOKEN", "configured")
+    monkeypatch.setattr(app_main.telegram_bot, "set_commands", fake_commands)
+    monkeypatch.setattr(app_main.telegram_bot, "configure_profile", fake_profile)
+
+    await app_main.configure_telegram()
+
+    assert called == ["commands", "profile"]
