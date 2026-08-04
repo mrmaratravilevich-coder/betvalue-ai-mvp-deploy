@@ -389,9 +389,11 @@ footer p { text-align: center; }
 .tg-tabs button.active { background: var(--lime); color: var(--ink); font-weight: 800; }
 .tg-tabs button:focus-visible, .tg-message button:focus-visible, .tg-match:focus-visible, .tg-nav a:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 .tg-feed { padding: 32px 0 10px; }
-.tg-feed-head { display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 15px; border-bottom: 1px solid #34393b; }
+.tg-feed-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 15px; border-bottom: 1px solid #34393b; }
 .tg-feed-head h2 { margin: 0; font-size: 21px; letter-spacing: -.02em; }
-.tg-feed-head > span { color: var(--lime); font: 800 12px monospace; }
+.tg-feed-head small { display: block; margin-top: 6px; color: #7f867f; font-size: 10px; }
+.tg-feed-head > button { width: 40px; height: 40px; border: 1px solid #3f4641; background: transparent; color: var(--lime); cursor: pointer; font-size: 22px; }
+.tg-feed-head > button:disabled { color: #626862; cursor: wait; }
 .tg-message { min-height: 150px; display: flex; align-items: center; gap: 18px; border-bottom: 1px solid #34393b; color: #969d97; line-height: 1.55; }
 .tg-message b { color: #f5f7f2; font-size: 16px; }
 .tg-message button { margin-left: auto; min-height: 42px; padding: 0 14px; border: 1px solid #4c534d; background: transparent; color: #fff; cursor: pointer; }
@@ -407,6 +409,12 @@ footer p { text-align: center; }
 .tg-analysis { display: flex; justify-content: space-between; gap: 14px; color: #7f867f; font-size: 11px; }
 .tg-analysis b { color: #aeb4ae; }
 .tg-analysis.ready b, .tg-analysis.ready span { color: var(--lime); }
+.tg-access { margin: 38px 0 8px; padding: 28px 0; border-top: 1px solid #34393b; border-bottom: 1px solid #34393b; display: flex; align-items: end; justify-content: space-between; gap: 24px; }
+.tg-access > div { max-width: 52ch; }
+.tg-access span { color: var(--lime); font: 700 10px monospace; letter-spacing: .1em; }
+.tg-access h2 { margin: 12px 0 10px; font-size: 25px; letter-spacing: -.02em; }
+.tg-access p { margin: 0; color: #979e98; font-size: 13px; line-height: 1.55; }
+.tg-access button { min-width: 78px; min-height: 42px; border: 1px solid #404641; background: transparent; color: #757b75; }
 .tg-nav { position: fixed; z-index: 10; left: 50%; bottom: var(--tg-safe-bottom); width: min(calc(100% - 24px), 696px); transform: translateX(-50%); display: grid; grid-template-columns: repeat(3, 1fr); background: #171b1d; box-shadow: 0 14px 38px rgba(0,0,0,.55); }
 .tg-nav a { min-height: 62px; display: grid; place-content: center; gap: 5px; color: #909790; text-align: center; font-size: 10px; }
 .tg-nav a span { color: #b6bbb6; font-size: 17px; line-height: 1; }
