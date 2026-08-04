@@ -134,3 +134,36 @@ async def test_channel_command_handles_missing_channel(monkeypatch):
 
     assert "готовится к запуску" in sent[0][1]
     assert sent[0][2] is None
+
+
+@pytest.mark.asyncio
+async def test_app_command_opens_mini_app(monkeypatch):
+    sent = []
+
+    async def fake_send(chat_id: int, text: str, reply_markup=None) -> dict:
+        sent.append((chat_id, text, reply_markup))
+        return {}
+
+    monkeypatch.setattr(telegram_bot, "send_message", fake_send)
+    monkeypatch.setattr(telegram_bot.settings, "TELEGRAM_WEB_APP_URL", "https://bvai.onrender.com/telegram")
+
+    await telegram_bot.handle_update({"message": {"text": "/app", "chat": {"id": 42}}})
+
+    assert "не выходя из Telegram" in sent[0][1]
+    assert sent[0][2]["inline_keyboard"][0][0]["web_app"]["url"] == "https://bvai.onrender.com/telegram"
+
+
+@pytest.mark.asyncio
+async def test_unknown_command_shows_recovery(monkeypatch):
+    sent = []
+
+    async def fake_send(chat_id: int, text: str, reply_markup=None) -> dict:
+        sent.append((chat_id, text, reply_markup))
+        return {}
+
+    monkeypatch.setattr(telegram_bot, "send_message", fake_send)
+    monkeypatch.setattr(telegram_bot.settings, "TELEGRAM_WEB_APP_URL", None)
+
+    await telegram_bot.handle_update({"message": {"text": "/unknown", "chat": {"id": 42}}})
+
+    assert "Не нашёл такую команду" in sent[0][1]
