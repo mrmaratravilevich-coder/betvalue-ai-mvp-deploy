@@ -21,6 +21,7 @@ type Match = {
 
 type Prediction = { match_id: number; selection: string; model_probability: number; uncertainty?: number | null };
 type TelegramSession = { first_name: string; username?: string | null; subscription_plan: string; access_token: string };
+type SubscriptionPlan = { code: string; name: string; description: string; features: string[]; available: boolean; price_stars?: number | null };
 type Sport = "all" | "football" | "hockey" | "basketball";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const SPORT_LABELS: Record<string, string> = { football: "Футбол", hockey: "Хоккей", basketball: "Баскетбол" };
@@ -50,6 +51,7 @@ export default function TelegramApp() {
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [session, setSession] = useState<TelegramSession | null>(null);
   const [sessionState, setSessionState] = useState<"loading" | "ready" | "outside" | "error">("loading");
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
 
   useEffect(() => {
     const telegram = (window as TelegramWindow).Telegram?.WebApp;
@@ -89,6 +91,15 @@ export default function TelegramApp() {
     const timer = window.setTimeout(() => { void authenticateTelegram(); }, 0);
     return () => window.clearTimeout(timer);
   }, [authenticateTelegram]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`${API_URL}/telegram/plans`, { signal: controller.signal })
+      .then((response) => response.ok ? response.json() : [])
+      .then((data) => setPlans(Array.isArray(data) ? data : []))
+      .catch(() => setPlans([]));
+    return () => controller.abort();
+  }, []);
 
   const loadMatches = useCallback(() => {
     const controller = new AbortController();
@@ -200,6 +211,14 @@ export default function TelegramApp() {
         </div>
         <button type="button" disabled>Скоро</button>
       </section>
+
+      {plans.length > 0 && <section className="tg-plans" aria-label="Тарифы">
+        {plans.map((plan) => <article key={plan.code} className={plan.available ? "available" : ""}>
+          <div><span>{plan.available ? "ДОСТУПЕН" : "ГОТОВИТСЯ"}</span><h3>{plan.name}</h3><p>{plan.description}</p></div>
+          <ul>{plan.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
+          <strong>{plan.price_stars ? `${plan.price_stars} Stars` : plan.available ? "Без оплаты" : "Цена позже"}</strong>
+        </article>)}
+      </section>}
 
       <nav className="tg-nav" aria-label="Навигация приложения">
         <Link className="active" href="/telegram"><span>●</span>Матчи</Link>
