@@ -24,3 +24,9 @@ class SubscriptionPlanOut(BaseModel):
     features: list[str]
     available: bool
     price_stars: int | None = None
+
+
+class TelegramInvoiceOut(BaseModel):
+    invoice_url: str
+    plan_code: str
+    price_stars: int
