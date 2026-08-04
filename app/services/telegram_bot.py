@@ -53,6 +53,30 @@ async def send_message(chat_id: int, text: str, reply_markup: dict | None = None
     )
 
 
+async def create_invoice_link(*, title: str, description: str, payload: str, amount_stars: int) -> str:
+    result = await _call(
+        "createInvoiceLink",
+        {
+            "title": title,
+            "description": description,
+            "payload": payload,
+            "provider_token": "",
+            "currency": "XTR",
+            "prices": [{"label": title, "amount": amount_stars}],
+        },
+    )
+    if not isinstance(result, str) or not result.startswith("https://"):
+        raise TelegramBotError("Telegram returned an invalid invoice link")
+    return result
+
+
+async def answer_pre_checkout_query(query_id: str, *, ok: bool, error_message: str | None = None) -> None:
+    payload: dict[str, object] = {"pre_checkout_query_id": query_id, "ok": ok}
+    if error_message:
+        payload["error_message"] = error_message
+    await _call("answerPreCheckoutQuery", payload)
+
+
 async def set_commands() -> None:
     await _call(
         "setMyCommands",
