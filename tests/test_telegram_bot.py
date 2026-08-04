@@ -28,6 +28,8 @@ async def test_start_command_sends_welcome(monkeypatch):
     button = sent[0][2]["inline_keyboard"][0][0]
     assert button["text"] == "Открыть матчи"
     assert button["web_app"]["url"] == "https://bvai.onrender.com/telegram"
+    assert sent[0][2]["inline_keyboard"][1][0]["text"] == "Тариф Pro"
+    assert sent[0][2]["inline_keyboard"][1][0]["web_app"]["url"].endswith("#plans")
 
 
 @pytest.mark.asyncio
@@ -152,6 +154,25 @@ async def test_app_command_opens_mini_app(monkeypatch):
 
     assert "не выходя из Telegram" in sent[0][1]
     assert sent[0][2]["inline_keyboard"][0][0]["web_app"]["url"] == "https://bvai.onrender.com/telegram"
+    assert sent[0][2]["inline_keyboard"][1][0]["text"] == "Тариф Pro"
+
+
+@pytest.mark.asyncio
+async def test_pro_command_opens_tariff(monkeypatch):
+    sent = []
+
+    async def fake_send(chat_id: int, text: str, reply_markup=None) -> dict:
+        sent.append((chat_id, text, reply_markup))
+        return {}
+
+    monkeypatch.setattr(telegram_bot, "send_message", fake_send)
+    monkeypatch.setattr(telegram_bot.settings, "TELEGRAM_WEB_APP_URL", "https://bvai.onrender.com/telegram")
+
+    await telegram_bot.handle_update({"message": {"text": "/pro", "chat": {"id": 42}}})
+
+    assert "Расширенный доступ" in sent[0][1]
+    assert sent[0][2]["inline_keyboard"][0][0]["text"] == "Открыть тариф Pro"
+    assert sent[0][2]["inline_keyboard"][0][0]["web_app"]["url"].endswith("#plans")
 
 
 @pytest.mark.asyncio
