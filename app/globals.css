@@ -409,6 +409,15 @@ footer p { text-align: center; }
 .tg-analysis { display: flex; justify-content: space-between; gap: 14px; color: #7f867f; font-size: 11px; }
 .tg-analysis b { color: #aeb4ae; }
 .tg-analysis.ready b, .tg-analysis.ready span { color: var(--lime); }
+.tg-account { margin-top: 34px; padding: 24px 0; border-top: 1px solid #34393b; border-bottom: 1px solid #34393b; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.tg-account > div:first-child { min-width: 0; max-width: 52ch; }
+.tg-account span { color: #858c86; font: 700 10px monospace; letter-spacing: .1em; }
+.tg-account h2 { margin: 10px 0 8px; font-size: 21px; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.tg-account p { margin: 0; color: #979e98; font-size: 12px; line-height: 1.55; }
+.tg-account > strong { flex: 0 0 auto; color: var(--lime); font: 800 11px monospace; }
+.tg-account > a, .tg-account > button { flex: 0 0 auto; min-height: 42px; padding: 0 14px; display: grid; place-items: center; border: 1px solid #4c534d; background: transparent; color: #fff; cursor: pointer; font-size: 12px; }
+.tg-account.error { border-color: rgba(255,107,95,.4); }
+.tg-account.error span { color: var(--danger); }
 .tg-access { margin: 38px 0 8px; padding: 28px 0; border-top: 1px solid #34393b; border-bottom: 1px solid #34393b; display: flex; align-items: end; justify-content: space-between; gap: 24px; }
 .tg-access > div { max-width: 52ch; }
 .tg-access span { color: var(--lime); font: 700 10px monospace; letter-spacing: .1em; }
@@ -503,4 +512,5 @@ footer p { text-align: center; }
   .tg-intro { padding-top: 34px; }
   .tg-match-meta, .tg-analysis { align-items: flex-start; flex-direction: column; gap: 6px; }
   .tg-match-meta span { max-width: 100%; }
+  .tg-account, .tg-access { align-items: flex-start; flex-direction: column; }
 }
