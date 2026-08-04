@@ -43,6 +43,7 @@ async def fetch_competition_matches(
     date_from: date | None = None,
     date_to: date | None = None,
     status: str | None = None,
+    season: int | None = None,
 ) -> list[dict]:
     """
     GET /v4/competitions/{code}/matches
@@ -63,6 +64,8 @@ async def fetch_competition_matches(
         params["dateTo"] = date_to.isoformat()
     if status:
         params["status"] = status
+    if season is not None:
+        params["season"] = str(season)
 
     headers = {"X-Auth-Token": settings.FOOTBALL_DATA_API_KEY}
     url = f"{BASE_URL}/competitions/{competition_code}/matches"

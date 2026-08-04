@@ -172,6 +172,7 @@ async def sync_football_data_league(
     league_config: LeagueConfig,
     date_from: date | None = None,
     date_to: date | None = None,
+    season: int | None = None,
 ) -> int:
     """Синхронизирует один турнир из football-data.org. Возвращает число обработанных матчей."""
     if not league_config.football_data_code:
@@ -179,7 +180,10 @@ async def sync_football_data_league(
 
     sport = await get_or_create_sport(db, code="football", name="Футбол")
     raw_matches = await football_data.fetch_competition_matches(
-        league_config.football_data_code, date_from=date_from, date_to=date_to
+        league_config.football_data_code,
+        date_from=date_from,
+        date_to=date_to,
+        season=season,
     )
 
     processed = 0
@@ -549,10 +553,12 @@ async def sync_upcoming_match_window(
     """
     Lightweight production sync for the public API.
 
-    Unlike the full daily pipeline, this only loads the near-term schedule and
-    deliberately skips the large StatsBomb historical dataset. Provider or
-    competition failures are isolated so one unavailable source cannot leave
-    the other sport empty.
+    Football-data.org defaults to the current season. We load the current and
+    previous seasons so the prediction engine has completed matches immediately
+    after a fresh deployment and at the start of a new season. ``football_days``
+    is kept for backwards compatibility; the season endpoint already contains
+    the complete current schedule. Hockey and basketball stay on the bounded
+    date window allowed by the free API-SPORTS plan.
     """
     current_day = today or date.today()
     result = {
@@ -562,23 +568,27 @@ async def sync_upcoming_match_window(
         "errors": 0,
     }
 
+    current_football_season = current_day.year if current_day.month >= 7 else current_day.year - 1
+    football_seasons = (current_football_season - 1, current_football_season)
+
     for league_config in SUPPORTED_LEAGUES:
         if not league_config.football_data_code:
             continue
-        try:
-            result["football_data_matches"] += await sync_football_data_league(
-                db,
-                league_config,
-                date_from=current_day,
-                date_to=current_day + timedelta(days=football_days),
-            )
-        except Exception:  # noqa: BLE001 - isolate provider/competition failures
-            await db.rollback()
-            result["errors"] += 1
-            logger.exception(
-                "Upcoming sync: football-data.org %s failed",
-                league_config.football_data_code,
-            )
+        for season in football_seasons:
+            try:
+                result["football_data_matches"] += await sync_football_data_league(
+                    db,
+                    league_config,
+                    season=season,
+                )
+            except Exception:  # noqa: BLE001 - isolate provider/competition failures
+                await db.rollback()
+                result["errors"] += 1
+                logger.exception(
+                    "Upcoming sync: football-data.org %s season %s failed",
+                    league_config.football_data_code,
+                    season,
+                )
 
     for offset in range(hockey_days + 1):
         game_date = current_day + timedelta(days=offset)
