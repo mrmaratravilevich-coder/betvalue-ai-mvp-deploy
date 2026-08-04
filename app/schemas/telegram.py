@@ -15,3 +15,12 @@ class TelegramSessionOut(BaseModel):
     username: str | None
     subscription_plan: str
     subscription_expires_at: datetime | None
+
+
+class SubscriptionPlanOut(BaseModel):
+    code: str
+    name: str
+    description: str
+    features: list[str]
+    available: bool
+    price_stars: int | None = None
