@@ -90,17 +90,44 @@ const SPORT_LABELS: Record<string, string> = {
 
 const SELECTION_LABELS: Record<string, string> = {
   home: "П1",
+  "1": "П1",
+  p1: "П1",
   draw: "X",
+  x: "X",
   away: "П2",
-  over: "Б",
-  under: "М",
+  "2": "П2",
+  p2: "П2",
+  home_or_draw: "1X",
+  draw_or_away: "X2",
+  home_or_away: "12",
+  over: "ТБ",
+  under: "ТМ",
   yes: "Да",
   no: "Нет",
+  odd: "Нечёт",
+  even: "Чёт",
 };
 
+function formatLineValue(value: number) {
+  return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 }).format(value);
+}
+
 function quoteLabel(quote: LineQuote) {
-  const base = SELECTION_LABELS[quote.selection] || quote.selection;
-  return quote.line_value == null ? base : `${base} ${quote.line_value}`;
+  const rawSelection = quote.selection.trim().toLowerCase();
+  const totalSelection = rawSelection.match(/^(under|over)[_:\s-]?(-?\d+(?:[.,]\d+)?)?$/);
+
+  if (totalSelection) {
+    const base = totalSelection[1] === "under" ? "ТМ" : "ТБ";
+    const embeddedValue = totalSelection[2]
+      ? Number(totalSelection[2].replace(",", "."))
+      : null;
+    const value = quote.line_value ?? embeddedValue;
+    return value == null ? base : `${base} ${formatLineValue(value)}`;
+  }
+
+  const base = SELECTION_LABELS[rawSelection]
+    || quote.selection.replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase());
+  return quote.line_value == null ? base : `${base} ${formatLineValue(quote.line_value)}`;
 }
 
 function formatKickoff(value: string) {
