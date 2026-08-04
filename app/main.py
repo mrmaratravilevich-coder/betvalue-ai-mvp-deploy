@@ -9,7 +9,7 @@ from app.api.router import api_router
 from app.core.config import settings
 from app.db.base import Base
 from app.db.session import AsyncSessionLocal, engine
-from app.services import prediction_engine
+from app.services import prediction_engine, telegram_bot
 from app.services.match_ingestion import sync_upcoming_match_window
 
 logger = logging.getLogger(__name__)
@@ -32,6 +32,18 @@ async def automatic_match_sync() -> None:
         await asyncio.sleep(settings.MATCH_SYNC_INTERVAL_SECONDS)
 
 
+async def configure_telegram() -> None:
+    """Refresh Telegram commands and public metadata without blocking API startup."""
+    if not settings.TELEGRAM_BOT_TOKEN:
+        return
+    try:
+        await telegram_bot.set_commands()
+        await telegram_bot.configure_profile()
+        logger.info("Telegram bot profile configured")
+    except Exception:  # noqa: BLE001 - Telegram must not block the public API
+        logger.exception("Telegram bot profile configuration failed")
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     sync_task: asyncio.Task | None = None
@@ -46,6 +58,7 @@ async def lifespan(_: FastAPI):
         and (settings.FOOTBALL_DATA_API_KEY or settings.API_SPORTS_KEY)
     ):
         sync_task = asyncio.create_task(automatic_match_sync(), name="automatic-match-sync")
+    await configure_telegram()
     try:
         yield
     finally:
