@@ -27,3 +27,19 @@ def test_context_sections_include_form_h2h_and_scoring():
 
     titles = {section["title"] for section in sections}
     assert {"Текущая форма", "Очные встречи", "Результативность последних матчей"} <= titles
+
+
+def test_context_sections_mark_data_limits_and_use_xg_when_available():
+    empty = build_context_sections(home_name="A", away_name="B", home_id=1, away_id=2, matches=[])
+    assert empty[0]["title"] == "Качество и границы данных"
+    assert "исторических матчей" in empty[0]["body"].lower()
+
+    sections = build_context_sections(
+        home_name="A", away_name="B", home_id=1, away_id=2,
+        matches=[
+            HistoricalMatch(1, 3, 2, 0, 1.8, 0.4),
+            HistoricalMatch(4, 2, 1, 1, 0.7, 1.2),
+        ],
+    )
+    xg = next(section for section in sections if section["title"] == "Качество создаваемых моментов")
+    assert "A" in xg["body"] and "B" in xg["body"]

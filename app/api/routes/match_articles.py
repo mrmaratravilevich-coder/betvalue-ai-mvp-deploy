@@ -66,7 +66,17 @@ async def get_match_article(match_id: int, db: AsyncSession = Depends(get_db)) -
         .order_by(desc(Match.kickoff_at))
         .limit(40)
     )
-    history = [HistoricalMatch(row.home_team_id, row.away_team_id, int(row.home_score), int(row.away_score)) for row in history_result.scalars().all()]
+    history = [
+        HistoricalMatch(
+            row.home_team_id,
+            row.away_team_id,
+            int(row.home_score),
+            int(row.away_score),
+            float(row.xg_home) if row.xg_home is not None else None,
+            float(row.xg_away) if row.xg_away is not None else None,
+        )
+        for row in history_result.scalars().all()
+    ]
     home_name = localize_name(match.home_team.name)
     away_name = localize_name(match.away_team.name)
     article = build_match_article(

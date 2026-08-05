@@ -67,6 +67,25 @@ def _scenario_text(selection: str, home_team: str, away_team: str) -> str:
     )
 
 
+def _alternative_scenario_text(selection: str, home_team: str, away_team: str) -> str:
+    """Describe the counter-scenario instead of presenting one-sided certainty."""
+    if selection == "home":
+        return (
+            f"Альтернативный сценарий: {away_team} удерживает темп, закрывает центр и"
+            f" переводит игру в эпизоды. Тогда преимущество {home_team} может не реализоваться."
+        )
+    if selection == "away":
+        return (
+            f"Альтернативный сценарий: {home_team} использует фактор своего поля,"
+            f" забирает инициативу после стартового отрезка и не даёт {away_team} играть на переходах."
+        )
+    return (
+        f"Альтернативный сценарий: одна из команд забивает первой и заставляет соперника"
+        f" отказаться от осторожного плана. Для пары {home_team} — {away_team} это особенно важно"
+        " при близких вероятностях исходов."
+    )
+
+
 def build_match_article(
     *,
     match_id: int,
@@ -158,10 +177,17 @@ def build_match_article(
                 "body": _scenario_text(leader.selection, home_team, away_team),
             },
             {
-                "title": "Насколько можно доверять выводу",
+                "title": "Два сценария матча",
+                "body": f"Основной сценарий: {_scenario_text(leader.selection, home_team, away_team)} "
+                f"{_alternative_scenario_text(leader.selection, home_team, away_team)}",
+            },
+            {
+                "title": "Риски и ограничения",
                 "body": (
                     f"Уровень надёжности — {_confidence_label(uncertainty).lower()}. "
-                    "Это оценка текущего расклада, а не обещание результата."
+                    f"Разница между лидирующим исходом и следующим вариантом — {_percent(margin)}. "
+                    "Это оценка текущего расклада, а не обещание результата. "
+                    "Составы, новости и движение линии учитываются только при наличии подтверждённых данных."
                 ),
             },
         ],

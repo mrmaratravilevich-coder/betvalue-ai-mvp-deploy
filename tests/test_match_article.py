@@ -33,7 +33,9 @@ def test_ready_article_is_plain_and_grounded() -> None:
     assert article.verdict == "Победа Арсенал"
     assert "55%" in article.lead
     assert article.confidence_label == "Средняя"
-    assert len(article.sections) == 3
+    assert len(article.sections) == 4
+    assert any(section["title"] == "Два сценария матча" for section in article.sections)
+    assert any(section["title"] == "Риски и ограничения" for section in article.sections)
 
 
 def test_close_match_does_not_claim_clear_favorite() -> None:
