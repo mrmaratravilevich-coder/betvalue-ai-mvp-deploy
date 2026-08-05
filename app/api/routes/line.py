@@ -10,10 +10,31 @@ from app.db.session import get_db
 from app.models.enums import MatchStatus
 from app.models.match import Match
 from app.models.odds import OddsLine, OddsSource
+from app.models.prediction import Prediction
 from app.models.team import League
 from app.services.name_localization import localize_name
 
 router = APIRouter(prefix="/line", tags=["line"])
+
+
+def _quote_analytics(price: float, prediction: Prediction | None) -> dict:
+    if prediction is None or prediction.uncertainty is None or float(prediction.uncertainty) > 0.5:
+        return {
+            "model_probability": None,
+            "uncertainty": None,
+            "value_edge": None,
+            "signal": "insufficient_data",
+        }
+
+    probability = float(prediction.model_probability)
+    uncertainty = float(prediction.uncertainty)
+    value_edge = probability * price - 1
+    return {
+        "model_probability": round(probability, 5),
+        "uncertainty": round(uncertainty, 4),
+        "value_edge": round(value_edge, 4),
+        "signal": "attention" if value_edge >= 0.05 else "neutral",
+    }
 
 
 @router.get("")
@@ -45,6 +66,21 @@ async def public_line(
     )
     lines = (await db.execute(stmt)).scalars().all()
 
+    match_ids = {line.match_id for line in lines}
+    predictions_by_quote: dict[tuple[int, int, str], Prediction] = {}
+    if match_ids:
+        prediction_stmt = (
+            select(Prediction)
+            .where(Prediction.match_id.in_(match_ids))
+            .order_by(Prediction.created_at.desc())
+        )
+        predictions = (await db.execute(prediction_stmt)).scalars().all()
+        for prediction in predictions:
+            predictions_by_quote.setdefault(
+                (prediction.match_id, prediction.market_id, prediction.selection),
+                prediction,
+            )
+
     matches: OrderedDict[int, dict] = OrderedDict()
     seen_quotes: set[tuple[int, int, str, float | None]] = set()
     for line in lines:
@@ -69,15 +105,16 @@ async def public_line(
                 "quotes": [],
             },
         )
-        item["quotes"].append(
-            {
-                "market": line.market.code.value,
-                "market_name": line.market.name,
-                "selection": line.selection,
-                "price": float(line.price),
-                "line_value": line_value,
-            }
-        )
+        price = float(line.price)
+        prediction = predictions_by_quote.get((match.id, line.market_id, line.selection))
+        item["quotes"].append({
+            "market": line.market.code.value,
+            "market_name": line.market.name,
+            "selection": line.selection,
+            "price": price,
+            "line_value": line_value,
+            **_quote_analytics(price, prediction),
+        })
         if len(matches) >= limit:
             break
 

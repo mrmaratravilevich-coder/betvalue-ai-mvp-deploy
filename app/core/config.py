@@ -35,7 +35,11 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins(self) -> list[str]:
-        return [origin.strip().rstrip("/") for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+        origins = [origin.strip().rstrip("/") for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+        for public_frontend in ("https://bvai.sourcecraft.site",):
+            if public_frontend not in origins:
+                origins.append(public_frontend)
+        return origins
 
     # Redis / Celery
     REDIS_URL: str = "redis://localhost:6379/0"
