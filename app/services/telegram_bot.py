@@ -135,7 +135,7 @@ def _format_fixture(fixture: UpcomingFixture) -> str:
 def _format_matches(matches: UpcomingMatches) -> str:
     lines = ["📅 Ближайшие матчи · время МСК"]
 
-    lines.extend(["", "⚽ Футбол · football-data.org"])
+    lines.extend(["", "⚽ Футбол"])
     if matches.football:
         lines.extend(_format_fixture(fixture) for fixture in matches.football)
     elif "football" in matches.errors:
@@ -143,7 +143,7 @@ def _format_matches(matches: UpcomingMatches) -> str:
     else:
         lines.append("Матчей в ближайшие 30 дней не найдено.")
 
-    lines.extend(["", "🏒 Хоккей · API-SPORTS"])
+    lines.extend(["", "🏒 Хоккей"])
     if matches.hockey:
         lines.extend(_format_fixture(fixture) for fixture in matches.hockey)
     elif "hockey" in matches.errors:

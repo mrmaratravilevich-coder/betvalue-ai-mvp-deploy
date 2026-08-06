@@ -23,6 +23,9 @@ def calculate_ev(model_probability: float, odds: float) -> float:
 
     Пример из ТЗ: P=0.61, odds=2.10 -> EV = 0.61*2.10 - 1 = 0.281 (+28.1%)
     """
+    if not 0 <= model_probability <= 1:
+        raise ValueError("Вероятность модели должна быть в диапазоне 0..1")
+    implied_probability(odds)
     return model_probability * odds - 1
 
 
@@ -36,6 +39,11 @@ def kelly_fraction(model_probability: float, odds: float, fraction: float = 0.25
     fraction — доля от полного Kelly (по ТЗ используем 25%).
     Результат ограничен снизу нулём: при отрицательном EV ставка не рекомендуется.
     """
+    if not 0 <= model_probability <= 1:
+        raise ValueError("Вероятность модели должна быть в диапазоне 0..1")
+    if fraction < 0:
+        raise ValueError("Доля Kelly не может быть отрицательной")
+    implied_probability(odds)
     b = odds - 1
     p = model_probability
     q = 1 - p
@@ -55,6 +63,8 @@ class EVEvaluation:
 
 def evaluate_bet(model_probability: float, odds: float, bank: float, kelly_pct: float = 0.25) -> EVEvaluation:
     """Собирает воедино EV и рекомендуемую ставку в рублях/условных единицах банка."""
+    if bank < 0:
+        raise ValueError("Банк не может быть отрицательным")
     ev = calculate_ev(model_probability, odds)
     k = kelly_fraction(model_probability, odds, fraction=kelly_pct)
     return EVEvaluation(

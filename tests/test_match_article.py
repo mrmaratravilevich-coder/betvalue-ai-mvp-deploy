@@ -54,6 +54,23 @@ def test_close_match_does_not_claim_clear_favorite() -> None:
     assert "явного фаворита нет" in article.lead
 
 
+def test_article_normalizes_rounded_probabilities() -> None:
+    article = build_match_article(
+        match_id=13,
+        home_team="Команда А",
+        away_team="Команда Б",
+        league_name="Лига",
+        predictions=[
+            prediction("home", 50),
+            prediction("draw", 30),
+            prediction("away", 20),
+        ],
+    )
+
+    assert "50%" in article.lead
+    assert "100%" not in article.lead
+
+
 def test_waiting_article_hides_incomplete_probabilities() -> None:
     article = build_match_article(
         match_id=12,

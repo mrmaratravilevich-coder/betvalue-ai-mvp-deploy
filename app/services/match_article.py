@@ -143,8 +143,43 @@ def build_match_article(
             updated_at=newest.created_at,
         )
 
-    ranked = sorted(complete_outcomes, key=lambda item: item.probability, reverse=True)
-    leader, second = ranked[0], ranked[1]
+    # A prediction source may return rounded or slightly uncalibrated values.
+    # Normalize once before ranking and printing so the article never shows a
+    # contradictory probability balance (for example, 50% + 40% + 40%).
+    raw_probabilities = {
+        item.selection: max(float(item.probability), 0.0)
+        for item in complete_outcomes
+    }
+    probability_total = sum(raw_probabilities.values())
+    if probability_total <= 0:
+        newest = max(complete_outcomes, key=lambda item: item.created_at)
+        return GeneratedArticle(
+            status="waiting",
+            title=title,
+            lead=f"Матч турнира «{league_name}». Расчёт не опубликован: вероятности ещё не прошли проверку.",
+            verdict="Нужна дополнительная проверка данных.",
+            confidence_label="Недостаточно данных",
+            sections=[
+                {
+                    "title": "Почему мы ждём",
+                    "body": "Публикуем вывод только после проверки всех трёх исходов и их согласованности.",
+                },
+            ],
+            model_version=newest.model_version,
+            updated_at=newest.created_at,
+        )
+    probability_by_selection = {
+        selection: probability / probability_total
+        for selection, probability in raw_probabilities.items()
+    }
+    ranked_selections = sorted(
+        probability_by_selection,
+        key=probability_by_selection.get,
+        reverse=True,
+    )
+    leader_selection, second_selection = ranked_selections[:2]
+    leader = latest[leader_selection]
+    second = latest[second_selection]
     uncertainty = max(value for value in uncertainty_values if value is not None)
     margin = leader.probability - second.probability
     if margin >= 0.15:
@@ -154,13 +189,12 @@ def build_match_article(
     else:
         balance = "Исходы расположены близко — явного фаворита нет."
 
-    probability_by_selection = {item.selection: item.probability for item in complete_outcomes}
     verdict_name = _outcome_name(leader.selection, home_team, away_team)
     newest = max(complete_outcomes, key=lambda item: item.created_at)
     return GeneratedArticle(
         status="ready",
         title=title,
-        lead=f"Наиболее вероятный сценарий — {verdict_name} ({_percent(leader.probability)}). {balance}",
+        lead=f"Наиболее вероятный сценарий — {verdict_name} ({_percent(probability_by_selection[leader_selection])}). {balance}",
         verdict=verdict_name[:1].upper() + verdict_name[1:],
         confidence_label=_confidence_label(uncertainty),
         sections=[

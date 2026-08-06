@@ -58,6 +58,11 @@ def score_matrix(
     dixon_coles_rho: float = 0.0,
 ) -> list[list[float]]:
     """P(home забил i, away забил j) для i,j в [0, max_goals]."""
+    if expected_home_goals < 0 or expected_away_goals < 0:
+        raise ValueError("Ожидаемое число голов не может быть отрицательным")
+    if max_goals < 0:
+        raise ValueError("max_goals не может быть отрицательным")
+
     def pmf(goals: int, expected_goals: float) -> float:
         return exp(-expected_goals) * expected_goals**goals / factorial(goals)
 
@@ -80,7 +85,13 @@ def score_matrix(
     ]
     if any(probability < 0 for row in matrix for probability in row):
         raise ValueError("Dixon-Coles rho produces a negative score probability")
-    return matrix
+    # Матрица ограничена max_goals, поэтому хвост распределения нужно
+    # вернуть в сумму 1. Иначе рынки ОЗ/тоталов получают другой масштаб,
+    # чем рынки исходов.
+    total_mass = sum(sum(row) for row in matrix)
+    if total_mass <= 0:
+        raise ValueError("Score probability mass must be positive")
+    return [[probability / total_mass for probability in row] for row in matrix]
 
 
 def predict_match(

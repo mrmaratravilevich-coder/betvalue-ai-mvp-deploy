@@ -80,6 +80,8 @@ async def test_matches_command_lists_upcoming_fixtures(monkeypatch):
     assert "Динамо × Спартак" in sent[0][1]
     assert "Премьер-лига" in sent[0][1]
     assert "время МСК" in sent[0][1]
+    assert "football-data.org" not in sent[0][1]
+    assert "API-SPORTS" not in sent[0][1]
 
 
 @pytest.mark.asyncio
