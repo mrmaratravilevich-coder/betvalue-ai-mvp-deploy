@@ -80,7 +80,8 @@ type ModelQuality = {
   windows: QualityWindow[];
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Use the public production API when the host has no build-time environment.
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://betvalue-api.onrender.com";
 const TELEGRAM_URL = "https://t.me/BetValueAI_bot";
 const SPORT_LABELS: Record<string, string> = {
   football: "Футбол",
@@ -315,7 +316,7 @@ export default function Home() {
 
       <section className="hero" id="top">
         <div className="hero-copy">
-          <div className="eyebrow">ФУТБОЛ · ХОККЕЙ · БАСКЕТБОЛ · ОТКРЫТАЯ BETA</div>
+          <div className="eyebrow">ФУТБОЛ · ХОККЕЙ · БАСКЕТБОЛ</div>
           <h1>Матчи — в одном месте.<br /><em>Аналитика — по делу.</em></h1>
           <p>
             Независимый умный сервис для быстрого разбора матчей: вероятности исходов,
@@ -373,9 +374,9 @@ export default function Home() {
           <span>до 200 ближайших событий</span>
         </article>
         <article>
-          <small>РЕЖИМ</small>
-          <strong>BETA</strong>
-          <span>открытое тестирование</span>
+          <small>ОБНОВЛЕНИЕ</small>
+          <strong>LIVE</strong>
+          <span>данные обновляются автоматически</span>
         </article>
       </section>
 
@@ -387,8 +388,8 @@ export default function Home() {
           </div>
           <div className={`line-source ${sources.melbet_feed?.ok ? "online" : ""}`}>
             <i aria-hidden="true" />
-            <span>Источник данных</span>
-            <strong>{sources.melbet_feed?.ok ? "MELBET · подключён" : "Проверяем подключение"}</strong>
+            <span>Состояние линии</span>
+            <strong>{sources.melbet_feed?.ok ? "ЛИНИЯ АКТУАЛЬНА" : "ПРОВЕРЯЕМ"}</strong>
           </div>
         </div>
 
@@ -401,10 +402,10 @@ export default function Home() {
 
         {!lineLoading && line.length === 0 && (
           <div className="line-empty">
-            <strong>{sources.melbet_feed?.ok ? "Источник подключён" : "Линия временно недоступна"}</strong>
+            <strong>{sources.melbet_feed?.ok ? "Линия готова" : "Линия временно недоступна"}</strong>
             <span>
               {sources.melbet_feed?.ok
-                ? "В тестовой линии сейчас нет активных событий. Новые матчи появятся здесь автоматически."
+                ? "Сейчас нет активных событий. Новые матчи появятся здесь автоматически."
                 : "Повторно проверим подключение при следующем обновлении страницы."}
             </span>
           </div>

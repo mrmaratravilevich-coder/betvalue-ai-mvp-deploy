@@ -37,7 +37,7 @@ type MatchArticle = {
   sections: Array<{ title: string; body: string }>;
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://betvalue-api.onrender.com";
 const TELEGRAM_URL = "https://t.me/BetValueAI_bot";
 const SPORT_LABELS: Record<string, string> = {
   football: "ФУТБОЛ",
