@@ -189,7 +189,7 @@ export default function TelegramApp() {
     <main className="tg-app">
       <header className="tg-head">
         <Link className="brand" href="/" aria-label="BetValue AI"><span>BV</span>BetValue <b>AI</b></Link>
-        <span className="tg-plan">ЛЕНТА</span>
+        <span className="tg-plan">BETA</span>
       </header>
 
       <section className="tg-intro">
@@ -234,7 +234,7 @@ export default function TelegramApp() {
       <section className={`tg-account ${sessionState}`} aria-live="polite">
         <div>
           <span>ВАШ ДОСТУП</span>
-          {sessionState === "ready" && <><h2>{session?.first_name}, базовый доступ активен</h2><p>Аккаунт подтверждён Telegram. Расширенные разборы открываются по подписке.</p></>}
+          {sessionState === "ready" && <><h2>{session?.first_name}, базовый доступ активен</h2><p>Аккаунт подтверждён Telegram. Расширенные функции пока закрыты до запуска подписки.</p></>}
           {sessionState === "loading" && <><h2>Проверяем аккаунт</h2><p>Подтверждаем безопасный запуск приложения через Telegram.</p></>}
           {sessionState === "outside" && <><h2>Откройте приложение из бота</h2><p>Авторизация работает только при запуске через кнопку в @BetValueAI_bot.</p></>}
           {sessionState === "error" && <><h2>Не удалось подтвердить аккаунт</h2><p>Вернитесь в бот и откройте приложение ещё раз или повторите проверку.</p></>}
@@ -249,7 +249,7 @@ export default function TelegramApp() {
         <div>
           <span>РАСШИРЕННЫЙ ДОСТУП</span>
           <h2 id="tg-access-title">Больше контекста по матчу</h2>
-          <p>{plans.some((plan) => plan.code === "pro" && plan.available) ? "Форма команд, очные встречи, расширенная статистика, одиночные варианты и экспресс-сценарии доступны в расширенном доступе." : "Форма команд, очные встречи, расширенная статистика, одиночные варианты и экспресс-сценарии появятся после запуска подписки."}</p>
+          <p>{plans.some((plan) => plan.code === "pro" && plan.available) ? "Форма команд, очные встречи, расширенная статистика, одиночные варианты и экспресс-сценарии доступны в тарифе Pro." : "Форма команд, очные встречи, расширенная статистика, одиночные варианты и экспресс-сценарии появятся после проверки источников и запуска подписки."}</p>
         </div>
         {plans.some((plan) => plan.code === "pro" && plan.available) ? <a className="tg-access-cta" href="#plans">Перейти к тарифу</a> : <button type="button" disabled>Скоро</button>}
       </section>

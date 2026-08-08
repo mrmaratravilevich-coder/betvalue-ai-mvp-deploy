@@ -91,36 +91,6 @@ nav a:hover, .text-link:hover { color: var(--lime); }
 .metrics strong { font-size: 36px; letter-spacing: -2px; }
 .metrics span { color: #8e938e; font-size: 12px; line-height: 1.4; }
 
-.line-section { padding: 82px 7vw 88px; background: var(--paper); color: var(--ink); }
-.line-heading { display: flex; align-items: end; justify-content: space-between; gap: 34px; margin-bottom: 34px; }
-.line-heading > div:first-child > span { color: #647d00; font: 700 11px/1 monospace; letter-spacing: 2.5px; }
-.line-heading h2 { max-width: 740px; margin: 14px 0 0; font-size: clamp(36px, 4vw, 58px); line-height: 1; letter-spacing: -.04em; text-wrap: balance; }
-.line-source { display: grid; grid-template-columns: 9px auto; column-gap: 10px; align-items: center; min-width: 220px; color: #747970; }
-.line-source i { grid-row: 1 / 3; width: 8px; height: 8px; border-radius: 50%; background: #969b92; }
-.line-source.online i { background: #607a00; box-shadow: 0 0 0 5px rgba(96,122,0,.12); }
-.line-source span { font-size: 10px; }
-.line-source strong { margin-top: 2px; color: #30342f; font-size: 12px; }
-.line-empty { min-height: 150px; padding: 30px 0; display: flex; flex-direction: column; justify-content: center; gap: 9px; border-top: 1px solid #c8c8c0; border-bottom: 1px solid #c8c8c0; }
-.line-empty strong { font-size: 22px; letter-spacing: -.02em; }
-.line-empty span { max-width: 68ch; color: #666b63; line-height: 1.55; }
-.line-list { border-top: 1px solid #c8c8c0; }
-.line-event { display: grid; grid-template-columns: minmax(180px,.7fr) minmax(260px,1.2fr) minmax(320px,1.5fr); gap: 28px; align-items: center; padding: 23px 0; border-bottom: 1px solid #c8c8c0; }
-.line-event-meta { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
-.line-event-meta > span { color: #617800; font: 800 10px monospace; letter-spacing: .08em; }
-.line-event-meta small { overflow: hidden; color: #747970; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
-.line-teams { display: grid; grid-template-columns: 1fr 18px 1fr; gap: 8px; align-items: center; }
-.line-teams strong { font-size: 15px; line-height: 1.35; }
-.line-teams strong:last-child { text-align: right; }
-.line-teams i { color: #969b92; text-align: center; font-style: normal; }
-.line-teams:hover strong { color: #536900; }
-.line-quotes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
-.line-quotes > span { min-width: 0; min-height: 43px; padding: 10px 11px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 5px 8px; background: #e4e4dc; }
-.line-quotes small { color: #6c7169; font-size: 10px; }
-.line-quotes strong { font-size: 13px; font-variant-numeric: tabular-nums; }
-.line-quotes .attention { background: #d9ee9e; }
-.line-quotes .attention em { grid-column: 1 / -1; color: #4d6000; font-size: 9px; font-style: normal; font-weight: 800; letter-spacing: .03em; }
-.line-note { margin: 18px 0 0; max-width: 72ch; color: #73786f; font-size: 11px; line-height: 1.5; }
-
 .quality-section {
   padding: 82px 7vw 88px;
   background: #15191b;
@@ -497,9 +467,6 @@ footer p { text-align: center; }
   .metrics article:nth-child(2) { border-right: 0; }
   .metrics article:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
   .quality-heading { align-items: start; flex-direction: column; }
-  .line-heading { align-items: start; flex-direction: column; }
-  .line-event { grid-template-columns: 1fr; gap: 15px; }
-  .line-quotes { justify-content: flex-start; }
   .quality-board { grid-template-columns: 1fr; }
   .quality-main-stat, .quality-detail { min-height: auto; border-right: 0; border-bottom: 1px solid #34393b; }
   .quality-board > :last-child { border-bottom: 0; }
@@ -529,12 +496,6 @@ footer p { text-align: center; }
   .score span { font-size: 38px; }
   .metrics article { padding: 24px 20px; }
   .metrics strong { font-size: 28px; }
-  .line-section { padding: 56px 20px 62px; }
-  .line-heading h2 { font-size: 40px; }
-  .line-teams { grid-template-columns: 1fr; }
-  .line-teams strong:last-child { text-align: left; }
-  .line-teams i { text-align: left; }
-  .line-quotes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .quality-section { padding: 56px 20px 62px; }
   .quality-heading h2 { font-size: 40px; }
   .quality-main-stat, .quality-detail { padding: 24px 0; }
