@@ -63,6 +63,7 @@ export default function MatchPage() {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [article, setArticle] = useState<MatchArticle | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "missing" | "error">("loading");
+  const [refreshToken, setRefreshToken] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -87,7 +88,13 @@ export default function MatchPage() {
       })
       .catch(() => setState("error"));
     return () => controller.abort();
-  }, [matchId]);
+  }, [matchId, refreshToken]);
+
+  useEffect(() => {
+    if (state !== "ready" || article?.status !== "waiting") return;
+    const timer = window.setInterval(() => setRefreshToken((value) => value + 1), 60_000);
+    return () => window.clearInterval(timer);
+  }, [article?.status, state]);
 
   const outcomes = useMemo(
     () => Object.fromEntries(predictions.map((item) => [item.selection, item])) as Record<string, Prediction>,
@@ -201,7 +208,14 @@ export default function MatchPage() {
                 </section>
               ))}
             </div>
-            <p className="expert-note">Разбор обновляется автоматически при поступлении новых проверенных данных.</p>
+            <div className="expert-article-actions">
+              <p className="expert-note">Разбор обновляется автоматически при поступлении новых проверенных данных.</p>
+              {article.status === "waiting" && (
+                <button className="secondary" type="button" onClick={() => setRefreshToken((value) => value + 1)}>
+                  Проверить обновление
+                </button>
+              )}
+            </div>
           </article>
         )}
       </section>
