@@ -184,6 +184,10 @@ export default function TelegramApp() {
       return new Date(left.kickoff_at).getTime() - new Date(right.kickoff_at).getTime();
     })
     .slice(0, 20), [matches, predictionsByMatch, sport]);
+  const readyCount = useMemo(
+    () => matches.filter((match) => hasReadyPredictionSet(predictionsByMatch.get(match.id) || [])).length,
+    [matches, predictionsByMatch],
+  );
 
   return (
     <main className="tg-app">
@@ -196,7 +200,17 @@ export default function TelegramApp() {
         <p>АНАЛИТИКА МАТЧЕЙ</p>
         <h1>{firstName ? `${firstName}, главное перед игрой` : "Главное перед игрой"}</h1>
         <span>Расписание, вероятности и уровень уверенности — коротко и без громких обещаний.</span>
+        <div className="tg-intro-status" aria-live="polite">
+          <i aria-hidden="true" />
+          {state === "loading" ? "Сверяем актуальные данные" : `${readyCount} разборов готовы к чтению`}
+        </div>
       </section>
+
+      <nav className="tg-quick-actions" aria-label="Быстрые действия">
+        <a href="#matches">Матчи</a>
+        <a href="#access">Что внутри</a>
+        <a href="#plans">Pro</a>
+      </nav>
 
       <div className="tg-tabs" role="group" aria-label="Вид спорта">
         {(["all", "football", "hockey", "basketball"] as Sport[]).map((value) => (
@@ -206,7 +220,7 @@ export default function TelegramApp() {
         ))}
       </div>
 
-      <section className="tg-feed" aria-live="polite">
+      <section className="tg-feed" id="matches" aria-live="polite">
         <div className="tg-feed-head">
           <div><h2>Ближайшие матчи</h2>{updatedAt && <small>Обновлено {updatedAt.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}</small>}</div>
           <button type="button" onClick={loadMatches} disabled={state === "loading"} aria-label="Обновить матчи">↻</button>
@@ -219,12 +233,12 @@ export default function TelegramApp() {
           const outcomes = new Map(matchPredictions.map((item) => [item.selection, item]));
           const ready = hasReadyPredictionSet(matchPredictions);
           return (
-            <Link className="tg-match" href={`/matches/${match.id}`} key={match.id}>
+            <Link className="tg-match" href={`/matches/${match.id}`} key={match.id} aria-label={`Открыть разбор: ${match.home_team.name} — ${match.away_team.name}`}>
               <div className="tg-match-meta"><span>{SPORT_LABELS[match.league.sport.code] || match.league.sport.name} · {match.league.name}</span><time>{kickoff(match.kickoff_at)} МСК</time></div>
               <div className="tg-teams"><strong>{match.home_team.name}</strong><i>—</i><strong>{match.away_team.name}</strong></div>
               <div className={`tg-analysis ${ready ? "ready" : ""}`}>
                 <b>{ready ? "Разбор готов" : "Собираем данные"}</b>
-                {ready ? <span>П1 {Math.round((outcomes.get("home")?.model_probability || 0) * 100)}% · Х {Math.round((outcomes.get("draw")?.model_probability || 0) * 100)}% · П2 {Math.round((outcomes.get("away")?.model_probability || 0) * 100)}%</span> : <span>Откроем расчёт, когда данных будет достаточно</span>}
+                {ready ? <span>П1 {Math.round((outcomes.get("home")?.model_probability || 0) * 100)}% · Х {Math.round((outcomes.get("draw")?.model_probability || 0) * 100)}% · П2 {Math.round((outcomes.get("away")?.model_probability || 0) * 100)}% · открыть разбор →</span> : <span>Откроем расчёт, когда данных будет достаточно</span>}
               </div>
             </Link>
           );

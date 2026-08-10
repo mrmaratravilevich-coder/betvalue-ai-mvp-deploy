@@ -384,6 +384,13 @@ footer p { text-align: center; }
 .tg-intro p { margin: 0 0 12px; color: var(--lime); font: 700 10px monospace; letter-spacing: .1em; }
 .tg-intro h1 { margin: 0 0 14px; max-width: 10ch; font-size: clamp(40px, 11vw, 64px); line-height: .94; letter-spacing: -.04em; text-wrap: balance; }
 .tg-intro > span { display: block; max-width: 52ch; color: #aeb4ae; font-size: 15px; line-height: 1.55; }
+.tg-intro-status { display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; color: #d7ddd4; font: 700 10px monospace; letter-spacing: .04em; text-transform: uppercase; }
+.tg-intro-status i { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 4px rgba(202, 232, 91, .12); }
+.tg-quick-actions { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 2px; scrollbar-width: none; }
+.tg-quick-actions::-webkit-scrollbar { display: none; }
+.tg-quick-actions a { flex: 0 0 auto; padding: 10px 13px; border: 1px solid #34393b; color: #b9c0b9; font-size: 11px; text-decoration: none; }
+.tg-quick-actions a:first-child { border-color: var(--lime); color: var(--lime); }
+.tg-quick-actions a:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 .tg-tabs { display: flex; overflow-x: auto; scrollbar-width: none; border: 1px solid #34393b; }
 .tg-tabs::-webkit-scrollbar { display: none; }
 .tg-tabs button { flex: 1 0 auto; min-height: 44px; padding: 0 14px; border: 0; border-right: 1px solid #34393b; background: transparent; color: #aeb4ae; cursor: pointer; }
