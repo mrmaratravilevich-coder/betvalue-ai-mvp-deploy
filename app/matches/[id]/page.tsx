@@ -68,8 +68,8 @@ export default function MatchPage() {
   useEffect(() => {
     const controller = new AbortController();
     Promise.all([
-      fetch(`${API_URL}/matches?limit=200`, { signal: controller.signal }).then((response) => {
-        if (!response.ok) throw new Error("matches");
+      fetch(`${API_URL}/matches/${matchId}`, { signal: controller.signal }).then((response) => {
+        if (!response.ok) throw new Error("match");
         return response.json();
       }),
       fetch(`${API_URL}/predictions?match_id=${matchId}&limit=50`, { signal: controller.signal })
@@ -77,14 +77,11 @@ export default function MatchPage() {
       fetch(`${API_URL}/match-articles/${matchId}`, { signal: controller.signal })
         .then((response) => response.ok ? response.json() : null),
     ])
-      .then(([matches, modelData, articleData]) => {
-        const current = Array.isArray(matches)
-          ? matches.find((item: Match) => item.id === matchId)
-          : null;
-        setMatch(current || null);
+      .then(([current, modelData, articleData]) => {
+        setMatch(current && typeof current === "object" ? current : null);
         setPredictions(Array.isArray(modelData) ? modelData : []);
         setArticle(articleData && typeof articleData === "object" ? articleData : null);
-        setState(current ? "ready" : "missing");
+        setState(current && typeof current === "object" ? "ready" : "missing");
       })
       .catch(() => setState("error"));
     return () => controller.abort();
