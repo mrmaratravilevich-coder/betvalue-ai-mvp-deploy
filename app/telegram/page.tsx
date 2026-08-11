@@ -164,7 +164,10 @@ export default function TelegramApp() {
 
   const openProInvoice = useCallback(async () => {
     const telegram = (window as TelegramWindow).Telegram?.WebApp;
-    if (!session?.access_token || !telegram?.openInvoice) return;
+    if (!session?.access_token) {
+      setInvoiceState("error");
+      return;
+    }
     setInvoiceState("loading");
     try {
       const response = await fetch(`${API_URL}/telegram/invoice`, {
@@ -173,16 +176,29 @@ export default function TelegramApp() {
       });
       if (!response.ok) throw new Error("telegram-invoice");
       const data = await response.json() as { invoice_url: string };
-      telegram.openInvoice(data.invoice_url, (status) => {
-        if (status === "paid") {
-          setInvoiceState("pending");
-          window.setTimeout(() => { void authenticateTelegram(); setInvoiceState("idle"); }, 1200);
-        } else if (status === "failed") {
-          setInvoiceState("error");
-        } else {
-          setInvoiceState("idle");
-        }
-      });
+      if (telegram?.openInvoice) {
+        telegram.openInvoice(data.invoice_url, (status) => {
+          if (status === "paid") {
+            setInvoiceState("pending");
+            window.setTimeout(() => { void authenticateTelegram(); setInvoiceState("idle"); }, 1200);
+          } else if (status === "failed") {
+            setInvoiceState("error");
+          } else {
+            setInvoiceState("idle");
+          }
+        });
+        return;
+      }
+      setInvoiceState("pending");
+      if (telegram?.openTelegramLink) {
+        telegram.openTelegramLink(data.invoice_url);
+        return;
+      }
+      if (telegram?.openLink) {
+        telegram.openLink(data.invoice_url);
+        return;
+      }
+      window.location.assign(data.invoice_url);
     } catch {
       setInvoiceState("error");
     }
@@ -315,7 +331,7 @@ export default function TelegramApp() {
             )}
             {plan.code === "pro" && session?.subscription_plan === "pro" && <em>Подписка активна</em>}
           </div>
-          {plan.code === "pro" && invoiceState === "error" && <small role="alert">Не удалось открыть оплату. Попробуйте ещё раз.</small>}
+          {plan.code === "pro" && invoiceState === "error" && <small role="alert">Не удалось открыть оплату. Запустите приложение кнопкой из @BetValueAI_bot и повторите.</small>}
         </article>)}
       </section>
 
