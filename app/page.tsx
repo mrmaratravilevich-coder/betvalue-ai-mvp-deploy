@@ -257,7 +257,13 @@ export default function Home() {
         <aside className={`pulse-card ${state === "error" ? "is-error" : ""}`} aria-live="polite">
           <div className="pulse-head">
             <span>Состояние системы</span>
-            <b>{state === "loading" ? "CHECK" : systemOnline ? "LIVE" : "OFFLINE"}</b>
+            <b>
+              {state === "loading"
+                ? "\u041e\u0411\u041d\u041e\u0412\u041b\u042f\u0415\u041c"
+                : systemOnline
+                  ? "\u0413\u041e\u0422\u041e\u0412\u041e"
+                  : "\u041f\u0410\u0423\u0417\u0410"}
+            </b>
           </div>
           <div className="score">{state === "loading" ? "—" : onlineSources}<span>/3</span></div>
           <p>
@@ -369,7 +375,7 @@ export default function Home() {
 
         {state === "error" && (
           <div className="state-panel error-panel" role="alert">
-            <span className="state-code">503</span>
+            <span className="state-code">!</span>
             <div>
               <h3>Матчи пока не загрузились</h3>
               <p>Обновите страницу через минуту или проверьте текущие матчи в Telegram.</p>

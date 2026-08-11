@@ -42,7 +42,7 @@ test("server-renders the public BetValue AI experience", async () => {
   assert.match(html, /Загружаем матчи/);
   assert.match(html, /Аналитика — по делу/);
   assert.match(html, /Линия рядом с аналитикой/);
-  assert.match(html, /Источник данных/);
+  assert.match(html, /Состояние линии/);
   assert.match(html, /есть расхождение/);
   assert.match(html, /ФУТБОЛ · ХОККЕЙ · БАСКЕТБОЛ/);
   assert.match(html, /https:\/\/t\.me\/BetValueAI_bot/);
@@ -71,5 +71,7 @@ test("server-renders the Telegram Mini App route", async () => {
   assert.match(html, /Главное перед игрой/);
   assert.match(html, /Ближайшие матчи/);
   assert.match(html, /Собираем матчи/);
+  assert.match(html, /Базовый/);
+  assert.match(html, /Расширенный/);
   assert.doesNotMatch(visibleText, /гарант|железн|выигрыш|Render/i);
 });

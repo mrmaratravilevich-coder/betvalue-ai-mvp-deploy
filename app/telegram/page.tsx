@@ -26,6 +26,22 @@ type Sport = "all" | "football" | "hockey" | "basketball";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://betvalue-api.onrender.com";
 const TELEGRAM_BOT_URL = "https://t.me/BetValueAI_bot";
 const SPORT_LABELS: Record<string, string> = { football: "Футбол", hockey: "Хоккей", basketball: "Баскетбол" };
+const FALLBACK_PLANS: SubscriptionPlan[] = [
+  {
+    code: "free",
+    name: "Базовый",
+    description: "Ближайшие матчи и краткая аналитика.",
+    features: ["Расписание матчей", "Вероятности исходов", "Уровень уверенности"],
+    available: true,
+  },
+  {
+    code: "pro",
+    name: "Расширенный",
+    description: "Форма, очные встречи и больше контекста по каждому матчу.",
+    features: ["Форма команд", "Очные встречи", "Расширенная статистика", "Одиночные варианты", "Экспресс-сценарии"],
+    available: false,
+  },
+];
 
 type TelegramWindow = Window & {
   Telegram?: { WebApp?: {
@@ -59,7 +75,7 @@ export default function TelegramApp() {
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [session, setSession] = useState<TelegramSession | null>(null);
   const [sessionState, setSessionState] = useState<"loading" | "ready" | "outside" | "error">("loading");
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>(FALLBACK_PLANS);
   const [invoiceState, setInvoiceState] = useState<"idle" | "loading" | "pending" | "error">("idle");
 
   useEffect(() => {
@@ -105,8 +121,8 @@ export default function TelegramApp() {
     const controller = new AbortController();
     fetch(`${API_URL}/telegram/plans`, { signal: controller.signal })
       .then((response) => response.ok ? response.json() : [])
-      .then((data) => setPlans(Array.isArray(data) ? data : []))
-      .catch(() => setPlans([]));
+      .then((data) => setPlans(Array.isArray(data) && data.length > 0 ? data : FALLBACK_PLANS))
+      .catch(() => setPlans(FALLBACK_PLANS));
     return () => controller.abort();
   }, []);
 
@@ -268,7 +284,7 @@ export default function TelegramApp() {
         {plans.some((plan) => plan.code === "pro" && plan.available) ? <a className="tg-access-cta" href="#plans">Перейти к тарифу</a> : <button type="button" disabled>Скоро</button>}
       </section>
 
-      {plans.length > 0 && <section className="tg-plans" id="plans" aria-label="Тарифы">
+      <section className="tg-plans" id="plans" aria-label="Тарифы">
         {plans.map((plan) => <article key={plan.code} className={plan.available ? "available" : ""}>
           <div><span>{plan.available ? "ДОСТУПЕН" : "ГОТОВИТСЯ"}</span><h3>{plan.name}</h3><p>{plan.description}</p></div>
           <ul>{plan.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
@@ -286,7 +302,7 @@ export default function TelegramApp() {
           </div>
           {plan.code === "pro" && invoiceState === "error" && <small role="alert">Не удалось открыть оплату. Попробуйте ещё раз.</small>}
         </article>)}
-      </section>}
+      </section>
 
       <nav className="tg-nav" aria-label="Навигация приложения">
         <Link className="active" href="/telegram"><span>●</span>Матчи</Link>
