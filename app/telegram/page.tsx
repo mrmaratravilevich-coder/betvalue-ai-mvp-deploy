@@ -49,6 +49,8 @@ type TelegramWindow = Window & {
     expand: () => void;
     initData?: string;
     openInvoice?: (url: string, callback?: (status: "paid" | "cancelled" | "failed" | "pending") => void) => void;
+    openTelegramLink?: (url: string) => void;
+    openLink?: (url: string, options?: { try_instant_view?: boolean }) => void;
     HapticFeedback?: { impactOccurred: (style: "light") => void };
     initDataUnsafe?: { user?: { first_name?: string } };
   } };
@@ -186,6 +188,19 @@ export default function TelegramApp() {
     }
   }, [authenticateTelegram, session]);
 
+  const openTelegramBot = useCallback(() => {
+    const telegram = (window as TelegramWindow).Telegram?.WebApp;
+    if (telegram?.openTelegramLink) {
+      telegram.openTelegramLink(TELEGRAM_BOT_URL);
+      return;
+    }
+    if (telegram?.openLink) {
+      telegram.openLink(TELEGRAM_BOT_URL);
+      return;
+    }
+    window.location.assign(TELEGRAM_BOT_URL);
+  }, []);
+
   const predictionsByMatch = useMemo(() => {
     const result = new Map<number, Prediction[]>();
     predictions.forEach((item) => result.set(item.match_id, [...(result.get(item.match_id) || []), item]));
@@ -291,7 +306,7 @@ export default function TelegramApp() {
           <div className="tg-plan-action">
             <strong>{plan.price_stars ? `${plan.price_stars} Stars` : plan.available ? "Без оплаты" : "Цена позже"}</strong>
             {plan.code === "pro" && plan.available && sessionState === "outside" && (
-              <a className="tg-plan-button" href={TELEGRAM_BOT_URL}>Открыть в Telegram</a>
+              <button className="tg-plan-button" type="button" onClick={openTelegramBot}>Открыть в Telegram</button>
             )}
             {plan.code === "pro" && plan.available && sessionState === "ready" && session?.subscription_plan !== "pro" && (
               <button type="button" onClick={openProInvoice} disabled={invoiceState === "loading" || invoiceState === "pending"}>
