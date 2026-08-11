@@ -19,6 +19,21 @@ class ArticlePrediction:
 
 
 @dataclass(frozen=True)
+class ArticleContext:
+    sport_code: str = "football"
+    home_form: tuple[str, ...] = ()
+    away_form: tuple[str, ...] = ()
+    h2h_count: int = 0
+    h2h_home_wins: int = 0
+    h2h_draws: int = 0
+    h2h_away_wins: int = 0
+    expected_home_score: float | None = None
+    expected_away_score: float | None = None
+    over_2_5_probability: float | None = None
+    both_score_probability: float | None = None
+
+
+@dataclass(frozen=True)
 class GeneratedArticle:
     status: str
     title: str
@@ -50,21 +65,67 @@ def _outcome_name(selection: str, home_team: str, away_team: str) -> str:
     return "ничья"
 
 
-def _scenario_text(selection: str, home_team: str, away_team: str) -> str:
-    if selection == "home":
-        return (
-            f"По текущему расчёту инициатива чаще остаётся у {home_team}. "
-            f"Для {away_team} ключевым становится умение удержать игру равной и не позволить хозяевам закрепить преимущество."
+def _form_points(form: tuple[str, ...]) -> int:
+    return sum(3 if result == "В" else 1 if result == "Н" else 0 for result in form)
+
+
+def _scenario_text(
+    *,
+    selection: str,
+    home_team: str,
+    away_team: str,
+    probabilities: dict[str, float],
+    context: ArticleContext | None,
+) -> str:
+    parts = [
+        f"Расчёт даёт {home_team} {_percent(probabilities['home'])}, ничьей {_percent(probabilities['draw'])}, "
+        f"а {away_team} — {_percent(probabilities['away'])}."
+    ]
+    if context and context.home_form and context.away_form:
+        home_points = _form_points(context.home_form)
+        away_points = _form_points(context.away_form)
+        home_games = len(context.home_form)
+        away_games = len(context.away_form)
+        if abs(home_points - away_points) >= 4:
+            stronger = home_team if home_points > away_points else away_team
+            weaker = away_team if home_points > away_points else home_team
+            parts.append(
+                f"Текущая форма сильнее у {stronger}: {max(home_points, away_points)} условных очков "
+                f"против {min(home_points, away_points)} у {weaker} за {max(home_games, away_games)} последних игр. "
+                "Это важное ограничение для основного прогноза."
+            )
+        else:
+            parts.append(
+                f"Форма сопоставима: {home_team} набрал {home_points} условных очков за {home_games} игр, "
+                f"{away_team} — {away_points} за {away_games}."
+            )
+    if context and context.expected_home_score is not None and context.expected_away_score is not None:
+        unit = "гола" if context.sport_code in {"football", "hockey"} else "очка"
+        total = context.expected_home_score + context.expected_away_score
+        scoring = (
+            f"Модель ожидает {context.expected_home_score:.2f}:{context.expected_away_score:.2f} {unit} "
+            f"(суммарно {total:.2f})"
         )
-    if selection == "away":
-        return (
-            f"Расчёт немного сильнее поддерживает {away_team}. "
-            f"Матч может измениться, если {home_team} сумеет навязать свой темп и использовать преимущество домашней площадки."
+        signals: list[str] = []
+        if context.over_2_5_probability is not None:
+            signals.append(f"тотал больше 2,5 — {_percent(context.over_2_5_probability)}")
+        if context.both_score_probability is not None:
+            signals.append(f"обе забьют — {_percent(context.both_score_probability)}")
+        parts.append(scoring + ("; " + ", ".join(signals) if signals else "") + ".")
+    if context and context.h2h_count:
+        parts.append(
+            f"Очная выборка ({context.h2h_count}): победы {home_team} — {context.h2h_home_wins}, "
+            f"ничьи — {context.h2h_draws}, победы {away_team} — {context.h2h_away_wins}. "
+            "Из-за размера выборки это вспомогательный, а не решающий сигнал."
         )
-    return (
-        f"Расклад между {home_team} и {away_team} выглядит близким. "
-        "В таком матче особенно важен первый результативный эпизод: после него характер игры может заметно измениться."
-    )
+    if len(parts) == 1:
+        fallback = {
+            "home": "Базовый сценарий — умеренный перевес хозяев без признаков односторонней игры.",
+            "away": "Базовый сценарий — преимущество гостей при сохраняющемся домашнем сопротивлении.",
+            "draw": "Базовый сценарий — равная игра без устойчивого преимущества одной стороны.",
+        }
+        parts.append(fallback[selection])
+    return " ".join(parts)
 
 
 def _alternative_scenario_text(selection: str, home_team: str, away_team: str) -> str:
@@ -93,6 +154,7 @@ def build_match_article(
     away_team: str,
     league_name: str,
     predictions: list[ArticlePrediction],
+    article_context: ArticleContext | None = None,
 ) -> GeneratedArticle:
     title = f"{home_team} — {away_team}: короткий разбор матча"
     latest = {prediction.selection: prediction for prediction in predictions}
@@ -181,7 +243,7 @@ def build_match_article(
     leader = latest[leader_selection]
     second = latest[second_selection]
     uncertainty = max(value for value in uncertainty_values if value is not None)
-    margin = leader.probability - second.probability
+    margin = probability_by_selection[leader_selection] - probability_by_selection[second_selection]
     if margin >= 0.15:
         balance = "Перевес заметный, но он не исключает другой исход."
     elif margin >= 0.07:
@@ -208,11 +270,17 @@ def build_match_article(
             },
             {
                 "title": "Как может пройти матч",
-                "body": _scenario_text(leader.selection, home_team, away_team),
+                "body": _scenario_text(
+                    selection=leader.selection,
+                    home_team=home_team,
+                    away_team=away_team,
+                    probabilities=probability_by_selection,
+                    context=article_context,
+                ),
             },
             {
                 "title": "Два сценария матча",
-                "body": f"Основной сценарий: {_scenario_text(leader.selection, home_team, away_team)} "
+                "body": f"Основной сценарий: {_scenario_text(selection=leader.selection, home_team=home_team, away_team=away_team, probabilities=probability_by_selection, context=article_context)} "
                 f"{_alternative_scenario_text(leader.selection, home_team, away_team)}",
             },
             {
