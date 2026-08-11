@@ -242,6 +242,31 @@ async def test_configure_profile_skips_menu_without_web_app(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_set_webhook_uses_render_url_and_payment_updates(monkeypatch):
+    calls = []
+
+    async def fake_call(method: str, payload=None):
+        calls.append((method, payload))
+        return True
+
+    monkeypatch.setattr(telegram_bot, "_call", fake_call)
+    monkeypatch.setattr(telegram_bot.settings, "TELEGRAM_BOT_TOKEN", "bot-token")
+    monkeypatch.setattr(telegram_bot.settings, "TELEGRAM_WEBHOOK_SECRET", "webhook-secret")
+    monkeypatch.setattr(telegram_bot.settings, "TELEGRAM_WEBHOOK_URL", None)
+    monkeypatch.setattr(telegram_bot.settings, "RENDER_EXTERNAL_URL", "https://betvalue-api.onrender.com")
+
+    configured = await telegram_bot.set_webhook()
+
+    assert configured is True
+    assert calls == [("setWebhook", {
+        "url": "https://betvalue-api.onrender.com/telegram/webhook",
+        "secret_token": "webhook-secret",
+        "allowed_updates": ["message", "pre_checkout_query"],
+        "drop_pending_updates": False,
+    })]
+
+
+@pytest.mark.asyncio
 async def test_api_startup_configures_telegram_profile(monkeypatch):
     called = []
 

@@ -110,12 +110,14 @@ class Settings(BaseSettings):
     # Telegram
     TELEGRAM_BOT_TOKEN: str | None = None
     TELEGRAM_WEBHOOK_SECRET: str | None = None
+    TELEGRAM_WEBHOOK_URL: str | None = None
     TELEGRAM_CHANNEL_URL: str | None = None
     TELEGRAM_WEB_APP_URL: str | None = None
     TELEGRAM_INIT_DATA_MAX_AGE_SECONDS: int = 600
     TELEGRAM_STARS_ENABLED: bool = False
     TELEGRAM_PRO_PRICE_STARS: int = 0
     TELEGRAM_PRO_DURATION_DAYS: int = 30
+    RENDER_EXTERNAL_URL: str | None = None
 
     # Affiliate integration (disabled until a signed agreement is in place)
     AFFILIATE_ENABLED: bool = False

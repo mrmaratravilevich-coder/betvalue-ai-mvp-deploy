@@ -1,6 +1,7 @@
 """Minimal async Telegram Bot API client and long-polling command handler."""
 
 import asyncio
+import hashlib
 import logging
 from datetime import timedelta, timezone
 
@@ -60,7 +61,6 @@ async def create_invoice_link(*, title: str, description: str, payload: str, amo
             "title": title,
             "description": description,
             "payload": payload,
-            "provider_token": "",
             "currency": "XTR",
             "prices": [{"label": title, "amount": amount_stars}],
         },
@@ -68,6 +68,40 @@ async def create_invoice_link(*, title: str, description: str, payload: str, amo
     if not isinstance(result, str) or not result.startswith("https://"):
         raise TelegramBotError("Telegram returned an invalid invoice link")
     return result
+
+
+def webhook_secret() -> str | None:
+    explicit = (settings.TELEGRAM_WEBHOOK_SECRET or "").strip()
+    if explicit:
+        return explicit
+    if not settings.TELEGRAM_BOT_TOKEN:
+        return None
+    return hashlib.sha256(settings.TELEGRAM_BOT_TOKEN.encode("utf-8")).hexdigest()
+
+
+def webhook_url() -> str | None:
+    explicit = (settings.TELEGRAM_WEBHOOK_URL or "").strip()
+    if explicit:
+        return explicit
+    render_url = (settings.RENDER_EXTERNAL_URL or "").strip().rstrip("/")
+    return f"{render_url}/telegram/webhook" if render_url else None
+
+
+async def set_webhook() -> bool:
+    url = webhook_url()
+    secret = webhook_secret()
+    if not url or not secret:
+        return False
+    await _call(
+        "setWebhook",
+        {
+            "url": url,
+            "secret_token": secret,
+            "allowed_updates": ["message", "pre_checkout_query"],
+            "drop_pending_updates": False,
+        },
+    )
+    return True
 
 
 async def answer_pre_checkout_query(query_id: str, *, ok: bool, error_message: str | None = None) -> None:

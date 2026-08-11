@@ -39,7 +39,8 @@ async def configure_telegram() -> None:
     try:
         await telegram_bot.set_commands()
         await telegram_bot.configure_profile()
-        logger.info("Telegram bot profile configured")
+        webhook_configured = await telegram_bot.set_webhook()
+        logger.info("Telegram bot profile configured; webhook=%s", webhook_configured)
     except Exception:  # noqa: BLE001 - Telegram must not block the public API
         logger.exception("Telegram bot profile configuration failed")
 

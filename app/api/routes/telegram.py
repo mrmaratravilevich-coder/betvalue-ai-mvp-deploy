@@ -166,7 +166,7 @@ async def telegram_webhook(
         Header(alias="X-Telegram-Bot-Api-Secret-Token"),
     ] = None,
 ) -> dict[str, bool]:
-    expected = settings.TELEGRAM_WEBHOOK_SECRET
+    expected = telegram_bot.webhook_secret()
     if not expected:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

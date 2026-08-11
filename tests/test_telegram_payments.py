@@ -85,5 +85,5 @@ async def test_create_invoice_link_uses_stars_payload(monkeypatch):
     assert result == "https://t.me/invoice/test"
     assert calls[0][0] == "createInvoiceLink"
     assert calls[0][1]["currency"] == "XTR"
-    assert calls[0][1]["provider_token"] == ""
+    assert "provider_token" not in calls[0][1]
     assert calls[0][1]["prices"] == [{"label": "BetValue AI Pro", "amount": 25}]
