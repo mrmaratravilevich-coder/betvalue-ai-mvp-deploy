@@ -107,6 +107,11 @@ function countLabel(count: number) {
   return `${count} ${word}`;
 }
 
+function qualityStatus(metrics?: QualityMetrics | null) {
+  if (!metrics || metrics.evaluated_matches < 20) return "Накопление данных";
+  return "Проверка обновляется автоматически";
+}
+
 function hasReliableCalculation(matchPredictions: Prediction[]) {
   const selections = new Map(matchPredictions.map((item) => [item.selection, item]));
   const uncertainty = selections.get("home")?.uncertainty;
@@ -349,8 +354,12 @@ export default function Home() {
           </div>
           <div className="quality-detail quality-status">
             <span>Статус проверки</span>
-            <strong>{selectedQuality?.overall.evaluated_matches ? "Обновляется автоматически" : "Накопление данных"}</strong>
-            <p>Без громких обещаний — только проверяемые результаты.</p>
+            <strong>{qualityStatus(selectedQuality?.overall)}</strong>
+            <p>
+              {selectedQuality?.overall.evaluated_matches && selectedQuality.overall.evaluated_matches < 20
+                ? "Выборка пока небольшая: показатель не используем как гарантию результата."
+                : "Без громких обещаний — только проверяемые результаты."}
+            </p>
           </div>
         </div>
       </section>
