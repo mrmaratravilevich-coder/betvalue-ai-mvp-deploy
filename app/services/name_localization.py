@@ -1,3 +1,6 @@
+Exit code: 0
+Wall time: 2.9 seconds
+Output:
 """Russian display names for provider-owned sports entities."""
 
 from __future__ import annotations
@@ -55,6 +58,10 @@ _KNOWN_NAMES = {
     "sevilla fc": "Севилья",
     "rayo vallecano de madrid": "Райо Вальекано",
     "fc bayern münchen": "Бавария",
+    "vfb stuttgart": "Штутгарт",
+    "1. fc köln": "Кёльн",
+    "vfb stuttgart": "Штутгарт",
+    "1. fc köln": "Кёльн",
     "borussia dortmund": "Боруссия Дортмунд",
     "bayer 04 leverkusen": "Байер 04",
     "fc internazionale milano": "Интер",
@@ -198,3 +205,4 @@ def localize_name(value: str) -> str:
         return semantic if semantic is not None else _transliterate_word(word)
 
     return re.sub(r"[A-Za-zÀ-ž0-9]+", localize_word, localized)
+
