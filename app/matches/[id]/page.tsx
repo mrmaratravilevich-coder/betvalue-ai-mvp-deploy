@@ -191,6 +191,7 @@ export default function MatchPage() {
               : "Мы не подставляем усреднённые или вымышленные значения. Аналитика появится автоматически, когда данных станет достаточно."}</p>
           </section>
           <aside className="model-facts">
+            <div><span>Основание публикации</span><strong>{article?.status === "ready" ? `3 исхода · ${article.sections.length} разделов` : "Проверка ещё не завершена"}</strong></div>
             <div><span>Надёжность</span><strong>{calculated ? confidence : "Недостаточно данных"}</strong></div>
             <div><span>Статус данных</span><strong>{calculated ? "Достаточно для публикации" : "Идёт накопление"}</strong></div>
             <div><span>Обновление</span><strong>При синхронизации матчей</strong></div>
