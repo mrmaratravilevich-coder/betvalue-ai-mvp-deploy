@@ -131,7 +131,7 @@ export default function TelegramApp() {
   const loadMatches = useCallback(() => {
     const controller = new AbortController();
     setState("loading");
-    const matchQuery = sport === "all" ? "limit=100" : `sport=${sport}&limit=100`;
+    const matchQuery = sport === "all" ? "limit=200" : `sport=${sport}&limit=100`;
     Promise.all([
       fetch(`${API_URL}/matches?${matchQuery}`, { signal: controller.signal }).then((response) => {
         if (!response.ok) throw new Error("matches");
