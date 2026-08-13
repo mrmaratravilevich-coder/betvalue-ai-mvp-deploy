@@ -35,6 +35,12 @@ type MatchArticle = {
   verdict: string;
   confidence_label: string;
   sections: Array<{ title: string; body: string }>;
+  quality?: {
+    evaluated_matches_30d: number;
+    accuracy_30d?: number | null;
+    calibration_error_30d?: number | null;
+    state: "insufficient" | "watch" | "stable";
+  } | null;
   updated_at?: string | null;
 };
 
@@ -122,6 +128,17 @@ export default function MatchPage() {
   const confidence = uncertainty == null
     ? "Не оценена"
     : uncertainty <= 0.2 ? "Высокая" : uncertainty <= 0.35 ? "Средняя" : "Ограниченная";
+  const quality = article?.quality;
+  const qualityTitle = quality?.state === "stable"
+    ? "Проверка в рабочем диапазоне"
+    : quality?.state === "watch"
+      ? "Нужна дополнительная проверка"
+      : "Выборка ещё растёт";
+  const qualityCopy = quality
+    ? quality.evaluated_matches_30d > 0
+      ? `Проверено матчей за 30 дней: ${quality.evaluated_matches_30d}`
+      : "Истории проверок за последние 30 дней пока нет"
+    : "Данные проверки появятся вместе с ближайшим обновлением";
 
   if (state === "loading") {
     return <main className="detail-shell"><div className="detail-state" role="status"><div className="loader" /><h1>Загружаем разбор матча</h1><p>Сверяем расписание и актуальность данных.</p></div></main>;
@@ -195,6 +212,7 @@ export default function MatchPage() {
             <div><span>Надёжность</span><strong>{calculated ? confidence : "Недостаточно данных"}</strong></div>
             <div><span>Статус данных</span><strong>{calculated ? "Достаточно для публикации" : "Идёт накопление"}</strong></div>
             <div><span>Обновление</span><strong>При синхронизации матчей</strong></div>
+            <div className="model-quality-fact"><span>Проверка модели</span><strong>{qualityTitle}<small>{qualityCopy}</small></strong></div>
           </aside>
         </div>
 
