@@ -35,6 +35,7 @@ type MatchArticle = {
   verdict: string;
   confidence_label: string;
   sections: Array<{ title: string; body: string }>;
+  updated_at?: string | null;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://betvalue-api.onrender.com";
@@ -54,6 +55,19 @@ function formatKickoff(value: string) {
     minute: "2-digit",
     timeZone: "Europe/Moscow",
   }).format(new Date(value));
+}
+
+function formatUpdatedAt(value?: string | null) {
+  if (!value) return "обновление не указано";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "обновление не указано";
+  return `${new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Moscow",
+  }).format(date)} МСК`;
 }
 
 export default function MatchPage() {
@@ -207,6 +221,7 @@ export default function MatchPage() {
             </div>
             <div className="expert-article-actions">
               <p className="expert-note">Разбор обновляется автоматически при поступлении новых проверенных данных.</p>
+              <small className="expert-note">Обновлено: {formatUpdatedAt(article.updated_at)}</small>
               {article.status === "waiting" && (
                 <button className="secondary" type="button" onClick={() => setRefreshToken((value) => value + 1)}>
                   Проверить обновление
