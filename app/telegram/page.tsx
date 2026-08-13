@@ -285,8 +285,8 @@ export default function TelegramApp() {
               <div className="tg-match-meta"><span>{SPORT_LABELS[match.league.sport.code] || match.league.sport.name} · {match.league.name}</span><time>{kickoff(match.kickoff_at)} МСК</time></div>
               <div className="tg-teams"><strong>{match.home_team.name}</strong><i>—</i><strong>{match.away_team.name}</strong></div>
               <div className={`tg-analysis ${ready ? "ready" : ""}`}>
-                <b>{ready ? "Разбор готов" : "Собираем данные"}</b>
-                {ready ? <span>П1 {Math.round((outcomes.get("home")?.model_probability || 0) * 100)}% · Х {Math.round((outcomes.get("draw")?.model_probability || 0) * 100)}% · П2 {Math.round((outcomes.get("away")?.model_probability || 0) * 100)}% · открыть разбор →</span> : <span>Откроем расчёт, когда данных будет достаточно</span>}
+                <b>{ready ? "Разбор готов" : "История накапливается"}</b>
+                {ready ? <span>П1 {Math.round((outcomes.get("home")?.model_probability || 0) * 100)}% · Х {Math.round((outcomes.get("draw")?.model_probability || 0) * 100)}% · П2 {Math.round((outcomes.get("away")?.model_probability || 0) * 100)}% · открыть разбор →</span> : <span>Расчёт появится после проверки истории команд</span>}
               </div>
             </Link>
           );
