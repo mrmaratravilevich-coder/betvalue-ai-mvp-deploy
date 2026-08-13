@@ -147,7 +147,7 @@ export default function TelegramApp() {
       setState("ready");
     }).catch(() => setState("error"));
     return () => controller.abort();
-  }, []);
+  }, [sport]);
 
   useEffect(() => {
     let cancel: (() => void) | undefined;
