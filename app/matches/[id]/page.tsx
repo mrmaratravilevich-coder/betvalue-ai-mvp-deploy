@@ -210,7 +210,7 @@ export default function MatchPage() {
           <aside className="model-facts">
             <div><span>Основание публикации</span><strong>{article?.status === "ready" ? `3 исхода · ${article.sections.length} разделов` : "Проверка ещё не завершена"}</strong></div>
             <div><span>Уверенность расчёта</span><strong>{calculated ? confidence : "Недостаточно данных"}</strong></div>
-            <div><span>Статус данных</span><strong>{calculated ? "Достаточно для публикации" : "Идёт накопление"}</strong></div>
+            <div><span>Статус данных</span><strong>{calculated ? "Расчёт доступен, проверка продолжается" : "Идёт накопление"}</strong></div>
             <div><span>Обновление</span><strong>При синхронизации матчей</strong></div>
             <div className="model-quality-fact"><span>Проверка модели</span><strong>{qualityTitle}<small>{qualityCopy}</small></strong></div>
           </aside>
