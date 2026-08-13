@@ -142,6 +142,7 @@ export default function Home() {
     const coldTimer = window.setTimeout(() => setColdStart(true), 8000);
     const timeout = window.setTimeout(() => controller.abort(), 50000);
 
+    const matchQuery = sportFilter === "all" ? "limit=200" : `sport=${sportFilter}&limit=200`;
     Promise.all([
       fetch(`${API_URL}/health`, { signal: controller.signal }).then((response) => {
         if (!response.ok) throw new Error("API unavailable");
@@ -151,7 +152,7 @@ export default function Home() {
         if (!response.ok) throw new Error("Sources unavailable");
         return response.json();
       }),
-      fetch(`${API_URL}/matches?limit=200`, { signal: controller.signal }).then((response) => {
+      fetch(`${API_URL}/matches?${matchQuery}`, { signal: controller.signal }).then((response) => {
         if (!response.ok) throw new Error("Matches unavailable");
         return response.json();
       }),
@@ -180,7 +181,7 @@ export default function Home() {
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, []);
+  }, [sportFilter]);
 
   const onlineSources = useMemo(
     () => Number(Boolean(sources.football?.ok))

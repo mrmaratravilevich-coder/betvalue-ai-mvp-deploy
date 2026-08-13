@@ -131,8 +131,9 @@ export default function TelegramApp() {
   const loadMatches = useCallback(() => {
     const controller = new AbortController();
     setState("loading");
+    const matchQuery = sport === "all" ? "limit=100" : `sport=${sport}&limit=100`;
     Promise.all([
-      fetch(`${API_URL}/matches?limit=100`, { signal: controller.signal }).then((response) => {
+      fetch(`${API_URL}/matches?${matchQuery}`, { signal: controller.signal }).then((response) => {
         if (!response.ok) throw new Error("matches");
         return response.json();
       }),
@@ -215,7 +216,7 @@ export default function TelegramApp() {
       return;
     }
     window.location.assign(TELEGRAM_BOT_URL);
-  }, []);
+  }, [sport]);
 
   const predictionsByMatch = useMemo(() => {
     const result = new Map<number, Prediction[]>();
