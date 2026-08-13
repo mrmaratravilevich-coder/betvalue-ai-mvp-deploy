@@ -295,6 +295,8 @@ nav a:hover, .text-link:hover { color: var(--lime); }
 .model-facts > div { padding: 20px 0; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 24px; }
 .model-facts span { color: #818781; font-size: 12px; }
 .model-facts strong { text-align: right; font-size: 13px; }
+.model-quality-fact strong { color: #6f8d27; }
+.model-quality-fact small { display: block; margin-top: 5px; color: #818781; font-size: 11px; font-weight: 400; line-height: 1.35; }
 .expert-article {
   margin-top: 80px;
   padding: clamp(34px, 5vw, 72px);
