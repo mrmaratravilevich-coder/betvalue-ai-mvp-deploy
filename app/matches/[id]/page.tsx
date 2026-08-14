@@ -140,10 +140,11 @@ export default function MatchPage() {
     && uncertainty != null
     && uncertainty <= 0.5
   );
-  const confidence = uncertainty == null
+  const rawConfidence = uncertainty == null
     ? "Не оценена"
     : uncertainty <= 0.2 ? "Высокая" : uncertainty <= 0.35 ? "Средняя" : "Ограниченная";
   const quality = article?.quality;
+  const confidence = quality?.state === "insufficient" ? "Предварительная" : rawConfidence;
   const qualityTitle = quality?.state === "stable"
     ? "Проверка в рабочем диапазоне"
     : quality?.state === "watch"
