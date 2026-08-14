@@ -284,6 +284,16 @@ nav a:hover, .text-link:hover { color: var(--lime); }
 .outcome > span { color: var(--lime); font: 700 12px monospace; }
 .outcome strong { font-size: clamp(54px, 7vw, 96px); letter-spacing: -.04em; line-height: 1; }
 .outcome small { color: #919791; }
+.market-board { margin-top: 48px; padding: 34px; border: 1px solid #34393b; background: #111416; }
+.market-board-heading { display: flex; justify-content: space-between; gap: 32px; align-items: end; }
+.market-board-heading h2 { margin: 14px 0 0; font-size: clamp(28px, 3vw, 44px); letter-spacing: -.035em; }
+.market-board-heading p { max-width: 38ch; margin: 0; color: #9ca29c; line-height: 1.55; font-size: 14px; }
+.market-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin-top: 30px; background: #34393b; border: 1px solid #34393b; }
+.market-card { min-height: 170px; padding: 20px; display: grid; align-content: space-between; gap: 12px; background: #171b1d; }
+.market-card > span { color: #919791; font: 700 10px monospace; letter-spacing: .04em; text-transform: uppercase; }
+.market-card strong { font-size: 17px; }
+.market-card b { color: var(--lime); font-size: clamp(32px, 4vw, 52px); letter-spacing: -.04em; line-height: 1; }
+.market-card small { color: #818781; font-size: 11px; line-height: 1.35; }
 .calculation-pending { padding: 48px; border: 1px solid #34393b; background: #111416; }
 .calculation-pending > span, .detail-kicker, .detail-telegram span { color: var(--lime); font: 700 11px monospace; letter-spacing: .08em; }
 .calculation-pending h2 { margin: 18px 0 12px; font-size: clamp(34px, 4vw, 58px); letter-spacing: -.03em; }
@@ -531,6 +541,10 @@ footer p { text-align: center; }
   .outcome { min-height: 130px; grid-template-columns: 42px 1fr auto; align-items: center; border-right: 0; border-bottom: 1px solid #34393b; }
   .outcome:last-child { border-bottom: 0; }
   .outcome strong { font-size: 52px; }
+  .market-board { padding: 24px 18px; }
+  .market-board-heading { display: block; }
+  .market-board-heading p { margin-top: 16px; }
+  .market-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .calculation-pending { padding: 28px; }
   .evidence-layout { margin-top: 54px; grid-template-columns: 1fr; }
   .expert-article { margin-top: 54px; padding: 30px 22px; }
