@@ -279,15 +279,15 @@ export default function Home() {
           </p>
           <div className="source-mini">
             <span>Футбольные матчи</span>
-            <strong>{state === "loading" ? "…" : sources.football?.ok ? "ГОТОВО" : "ПАУЗА"}</strong>
+            <strong>{state === "loading" ? "…" : sources.football?.ok ? "ИСТОЧНИК ГОТОВ" : "ПАУЗА"}</strong>
           </div>
           <div className="source-mini">
             <span>Хоккейные матчи</span>
-            <strong>{state === "loading" ? "…" : sources.hockey?.ok ? "ГОТОВО" : "ПАУЗА"}</strong>
+            <strong>{state === "loading" ? "…" : sources.hockey?.ok ? "ИСТОЧНИК ГОТОВ" : "ПАУЗА"}</strong>
           </div>
           <div className="source-mini">
             <span>Баскетбольные матчи</span>
-            <strong>{state === "loading" ? "…" : sources.basketball?.ok ? "ГОТОВО" : "ПАУЗА"}</strong>
+            <strong>{state === "loading" ? "…" : sources.basketball?.ok ? "ИСТОЧНИК ГОТОВ" : "ПАУЗА"}</strong>
           </div>
         </aside>
       </section>
@@ -523,7 +523,7 @@ export default function Home() {
                     <span>
                       {hasCalculation
                         ? "Данных достаточно для публикации"
-                        : "Пока недостаточно данных о командах"}
+                        : match.league.sport.code === "football" ? "Пока недостаточно данных о командах" : "Расчёты по этому виду спорта ещё накапливаются"}
                     </span>
                   </div>
                   {hasCalculation ? (
