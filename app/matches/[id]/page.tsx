@@ -77,6 +77,14 @@ function formatUpdatedAt(value?: string | null) {
   }).format(date)} МСК`;
 }
 
+function formatSelection(selection: string) {
+  if (selection === "yes") return "Да";
+  if (selection === "no") return "Нет";
+  const total = selection.match(/^(over|under)_(.+)$/);
+  if (total) return `${total[1] === "over" ? "Больше" : "Меньше"} ${total[2]}`;
+  return selection.replaceAll("_", " ");
+}
+
 export default function MatchPage() {
   const params = useParams<{ id: string }>();
   const matchId = Number(params.id);
@@ -219,7 +227,7 @@ export default function MatchPage() {
               {marketRows.map((item) => (
                 <article className="market-card" key={`${item.market || "market"}-${item.selection}`}>
                   <span>{item.market || "Дополнительный рынок"}</span>
-                  <strong>{item.selection === "yes" ? "Да" : item.selection === "no" ? "Нет" : item.selection.replaceAll("_", " ")}</strong>
+                  <strong>{formatSelection(item.selection)}</strong>
                   <b>{Math.round(item.model_probability * 100)}%</b>
                   <small>{item.uncertainty == null ? "Уровень неопределённости не указан" : `Неопределённость: ${Math.round(item.uncertainty * 100)}%`}</small>
                 </article>
