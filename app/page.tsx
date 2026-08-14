@@ -262,12 +262,12 @@ export default function Home() {
 
         <aside className={`pulse-card ${state === "error" ? "is-error" : ""}`} aria-live="polite">
           <div className="pulse-head">
-            <span>Состояние системы</span>
+            <span>Доступность данных</span>
             <b>
               {state === "loading"
                 ? "\u041e\u0411\u041d\u041e\u0412\u041b\u042f\u0415\u041c"
                 : systemOnline
-                  ? "\u0413\u041e\u0422\u041e\u0412\u041e"
+                  ? "ДАННЫЕ ДОСТУПНЫ"
                   : "\u041f\u0410\u0423\u0417\u0410"}
             </b>
           </div>
@@ -275,7 +275,7 @@ export default function Home() {
           <p>
             {state === "loading"
               ? coldStart ? "Обновляем данные…" : "Проверяем источники…"
-              : state === "error" ? "Данные временно недоступны" : "вида спорта доступны"}
+              : state === "error" ? "Данные временно недоступны" : "раздела с данными"}
           </p>
           <div className="source-mini">
             <span>Футбольные матчи</span>
