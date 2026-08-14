@@ -22,6 +22,7 @@ type Match = {
 
 type Prediction = {
   match_id: number;
+  market?: string;
   selection: string;
   model_probability: number;
   uncertainty?: number | null;
@@ -117,6 +118,12 @@ export default function MatchPage() {
     () => Object.fromEntries(predictions.map((item) => [item.selection, item])) as Record<string, Prediction>,
     [predictions],
   );
+  const marketRows = useMemo(
+    () => predictions
+      .filter((item) => !["home", "draw", "away"].includes(item.selection))
+      .sort((left, right) => right.model_probability - left.model_probability),
+    [predictions],
+  );
   const uncertainty = outcomes.home?.uncertainty;
   const calculated = Boolean(
     outcomes.home
@@ -197,6 +204,28 @@ export default function MatchPage() {
             <h2>Проценты пока не публикуем</h2>
             <p>Для уверенного расчёта нужна достаточная история завершённых матчей команд в этой лиге.</p>
           </div>
+        )}
+
+        {calculated && marketRows.length > 0 && (
+          <section className="market-board" aria-labelledby="market-board-title">
+            <div className="market-board-heading">
+              <div>
+                <span className="detail-kicker">ДОПОЛНИТЕЛЬНЫЕ РЫНКИ</span>
+                <h2 id="market-board-title">Что ещё показывает расчёт</h2>
+              </div>
+              <p>Вероятности приведены отдельно по каждому доступному сценарию.</p>
+            </div>
+            <div className="market-grid">
+              {marketRows.map((item) => (
+                <article className="market-card" key={`${item.market || "market"}-${item.selection}`}>
+                  <span>{item.market || "Дополнительный рынок"}</span>
+                  <strong>{item.selection === "yes" ? "Да" : item.selection === "no" ? "Нет" : item.selection.replaceAll("_", " ")}</strong>
+                  <b>{Math.round(item.model_probability * 100)}%</b>
+                  <small>{item.uncertainty == null ? "Уровень неопределённости не указан" : `Неопределённость: ${Math.round(item.uncertainty * 100)}%`}</small>
+                </article>
+              ))}
+            </div>
+          </section>
         )}
 
         <div className="evidence-layout">
