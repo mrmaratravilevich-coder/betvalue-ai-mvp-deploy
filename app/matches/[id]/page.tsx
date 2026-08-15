@@ -28,6 +28,18 @@ type Prediction = {
   uncertainty?: number | null;
 };
 
+type EVBet = {
+  id: number;
+  match_id: number;
+  market?: string;
+  selection: string;
+  model_probability: number;
+  odds: number;
+  ev: number;
+  confidence?: number | null;
+  reasoning?: string | null;
+};
+
 type MatchArticle = {
   match_id: number;
   status: "ready" | "waiting";
@@ -90,6 +102,7 @@ export default function MatchPage() {
   const matchId = Number(params.id);
   const [match, setMatch] = useState<Match | null>(null);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [evBets, setEvBets] = useState<EVBet[]>([]);
   const [article, setArticle] = useState<MatchArticle | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "missing" | "error">("loading");
   const [refreshToken, setRefreshToken] = useState(0);
@@ -105,10 +118,13 @@ export default function MatchPage() {
         .then((response) => response.ok ? response.json() : []),
       fetch(`${API_URL}/match-articles/${matchId}`, { signal: controller.signal })
         .then((response) => response.ok ? response.json() : null),
+      fetch(`${API_URL}/ev?match_id=${matchId}&limit=10`, { signal: controller.signal })
+        .then((response) => response.ok ? response.json() : []),
     ])
-      .then(([current, modelData, articleData]) => {
+      .then(([current, modelData, articleData, evData]) => {
         setMatch(current && typeof current === "object" ? current : null);
         setPredictions(Array.isArray(modelData) ? modelData : []);
+        setEvBets(Array.isArray(evData) ? evData : []);
         setArticle(articleData && typeof articleData === "object" ? articleData : null);
         setState(current && typeof current === "object" ? "ready" : "missing");
       })
@@ -234,6 +250,41 @@ export default function MatchPage() {
                 </article>
               ))}
             </div>
+          </section>
+        )}
+
+        {calculated && (
+          <section className="ev-board" aria-labelledby="ev-board-title">
+            <div className="ev-board-heading">
+              <div>
+                <span className="detail-kicker">ПРОВЕРКА ЛИНИИ</span>
+                <h2 id="ev-board-title">Выгодная ставка — только при подтверждённой котировке</h2>
+              </div>
+              <p>Сравниваем вероятность расчёта с доступной котировкой. Без линии здесь не появляется готовая рекомендация.</p>
+            </div>
+            {evBets.length > 0 ? (
+              <div className="ev-grid">
+                {evBets.map((item) => (
+                  <article className="ev-card" key={item.id}>
+                    <div className="ev-card-head">
+                      <span>{item.market || "Рынок"}</span>
+                      <b>EV {item.ev >= 0 ? "+" : ""}{(item.ev * 100).toFixed(1)}%</b>
+                    </div>
+                    <strong>{formatSelection(item.selection)}</strong>
+                    <div className="ev-card-data">
+                      <span>Коэффициент <b>{item.odds.toFixed(2)}</b></span>
+                      <span>Вероятность <b>{Math.round(item.model_probability * 100)}%</b></span>
+                    </div>
+                    {item.reasoning && <p>{item.reasoning}</p>}
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="ev-empty">
+                <strong>Подтверждённой выгодной линии пока нет</strong>
+                <p>Для этого матча ещё не поступила котировка, прошедшая проверку. Проценты модели помогают читать сценарии, но сами по себе не являются ставкой.</p>
+              </div>
+            )}
           </section>
         )}
 
