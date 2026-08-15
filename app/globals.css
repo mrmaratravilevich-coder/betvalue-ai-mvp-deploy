@@ -294,6 +294,22 @@ nav a:hover, .text-link:hover { color: var(--lime); }
 .market-card strong { font-size: 17px; }
 .market-card b { color: var(--lime); font-size: clamp(32px, 4vw, 52px); letter-spacing: -.04em; line-height: 1; }
 .market-card small { color: #818781; font-size: 11px; line-height: 1.35; }
+.ev-board { margin-top: 26px; padding: 30px 34px; border: 1px solid #34393b; background: #15191b; }
+.ev-board-heading { display: flex; justify-content: space-between; gap: 32px; align-items: end; }
+.ev-board-heading h2 { margin: 14px 0 0; max-width: 18ch; font-size: clamp(26px, 3vw, 42px); letter-spacing: -.035em; line-height: 1.05; }
+.ev-board-heading p { max-width: 38ch; margin: 0; color: #9ca29c; line-height: 1.55; font-size: 14px; }
+.ev-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin-top: 28px; background: #34393b; border: 1px solid #34393b; }
+.ev-card { padding: 22px; display: grid; gap: 14px; background: #1b2021; }
+.ev-card-head, .ev-card-data { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+.ev-card-head span { color: #919791; font: 700 10px monospace; letter-spacing: .04em; text-transform: uppercase; }
+.ev-card-head b { color: var(--lime); font: 700 12px monospace; }
+.ev-card > strong { font-size: 25px; }
+.ev-card-data { color: #8f968f; font-size: 12px; }
+.ev-card-data b { color: #f2f4ef; }
+.ev-card p { margin: 0; color: #a7ada7; font-size: 12px; line-height: 1.55; }
+.ev-empty { margin-top: 28px; padding: 24px; border: 1px dashed #49504b; background: #111416; }
+.ev-empty strong { display: block; font-size: 16px; }
+.ev-empty p { max-width: 70ch; margin: 10px 0 0; color: #9ca29c; font-size: 13px; line-height: 1.6; }
 .calculation-pending { padding: 48px; border: 1px solid #34393b; background: #111416; }
 .calculation-pending > span, .detail-kicker, .detail-telegram span { color: var(--lime); font: 700 11px monospace; letter-spacing: .08em; }
 .calculation-pending h2 { margin: 18px 0 12px; font-size: clamp(34px, 4vw, 58px); letter-spacing: -.03em; }
@@ -545,6 +561,10 @@ footer p { text-align: center; }
   .market-board-heading { display: block; }
   .market-board-heading p { margin-top: 16px; }
   .market-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ev-board { padding: 24px 18px; }
+  .ev-board-heading { display: block; }
+  .ev-board-heading p { margin-top: 16px; }
+  .ev-grid { grid-template-columns: 1fr; }
   .calculation-pending { padding: 28px; }
   .evidence-layout { margin-top: 54px; grid-template-columns: 1fr; }
   .expert-article { margin-top: 54px; padding: 30px 22px; }
